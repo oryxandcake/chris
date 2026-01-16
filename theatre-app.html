@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UK Theatre Browser</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { margin: 0; padding: 0; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useCallback, useMemo } = React;
+
+    // Simple SVG Icon Components
+    const Theater = ({ className = "w-6 h-6" }) => (
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
+      </svg>
+    );
+
+    const Calendar = ({ className = "w-4 h-4" }) => (
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      </svg>
+    );
+
+    const MapPin = ({ className = "w-4 h-4" }) => (
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+      </svg>
+    );
+
+    const Download = ({ className = "w-5 h-5" }) => (
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+      </svg>
+    );
+
+    const Star = ({ className = "w-4 h-4" }) => (
+      <svg className={className} fill="currentColor" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+      </svg>
+    );
+
+    const ArrowLeft = ({ className = "w-5 h-5" }) => (
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+      </svg>
+    );
+
+    const ArrowRight = ({ className = "w-3 h-3" }) => (
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+      </svg>
+    );
+
+    const X = ({ className = "w-5 h-5" }) => (
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    );
+
+    const Heart = ({ className = "w-8 h-8" }) => (
+      <svg className={className} fill="inherit" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+      </svg>
+    );
+
+    const List = ({ className = "w-5 h-5" }) => (
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+      </svg>
+    );
+
+    const ChevronLeft = ({ className = "w-6 h-6" }) => (
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+      </svg>
+    );
+
+    const ChevronRight = ({ className = "w-6 h-6" }) => (
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+      </svg>
+    );
+
+    const CornerDownLeft = ({ className = "w-3 h-3" }) => (
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 10l-5 5m0 0l5 5m-5-5h11a4 4 0 004-4V7" />
+      </svg>
+    );
+
+    const Delete = ({ className = "w-3 h-3" }) => (
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+      </svg>
+    );
+
+    // Enhanced show data with descriptions, ratings, poster colors and poster URLs
+    const shows = [
+      // ============ LONDON - West End & Major Venues ============
+      { id: 1, title: "The Mousetrap", venue: "St Martin's Theatre", city: "London", genre: "Play", startDate: null, endDate: null, dateNote: "Ongoing (since 1952)",
+        description: "Agatha Christie's legendary whodunit - the world's longest-running play. A group of strangers trapped in a remote guesthouse discover one of them is a murderer. 70+ years of keeping audiences guessing.",
+        ratings: { guardian: null, telegraph: null, timeout: 4 }, cast: "Rotating cast", posterColor: "from-gray-800 to-gray-900", posterUrl: null },
+
+      { id: 2, title: "Les Misérables", venue: "Sondheim Theatre", city: "London", genre: "Musical", startDate: null, endDate: "2026-10-03", dateNote: "Until 3 Oct 2026",
+        description: "Victor Hugo's epic tale of love, sacrifice and redemption in revolutionary France. Now celebrating 40 years in the West End. Features iconic songs including 'I Dreamed A Dream' and 'One Day More'.",
+        ratings: { guardian: 5, telegraph: 5, timeout: 5 }, cast: "Ian McIntosh, Sam Oladeinde, Lucie Jones", posterColor: "from-red-900 to-red-950", posterUrl: "https://store.playbill.co.uk/lesmis/products/les-miserables-poster-london" },
+
+      { id: 3, title: "The Phantom of the Opera", venue: "His Majesty's Theatre", city: "London", genre: "Musical", startDate: null, endDate: null, dateNote: "Ongoing (40 years)",
+        description: "Andrew Lloyd Webber's gothic romance about a masked musical genius haunting the Paris Opera House. The chandelier crash remains one of theatre's most spectacular moments.",
+        ratings: { guardian: 4, telegraph: 5, timeout: 4 }, cast: "Rotating cast", posterColor: "from-zinc-900 to-black", posterUrl: null },
+
+      { id: 4, title: "Mamma Mia!", venue: "Novello Theatre", city: "London", genre: "Musical", startDate: null, endDate: "2026-09-26", dateNote: "Until 26 Sep 2026",
+        description: "The ultimate feel-good musical featuring ABBA's greatest hits. A mother, a daughter, three possible dads, and a Greek island wedding. 'Dancing Queen' has never sounded better.",
+        ratings: { guardian: 4, telegraph: 4, timeout: 4 }, cast: "Rotating cast", posterColor: "from-blue-500 to-cyan-600", posterUrl: null },
+
+      { id: 5, title: "Wicked", venue: "Apollo Victoria Theatre", city: "London", genre: "Musical", startDate: null, endDate: null, dateNote: "Ongoing",
+        description: "The untold story of the Witches of Oz. Before Dorothy arrived, Elphaba and Glinda were unlikely friends at university. Features the showstopping 'Defying Gravity'. Now a blockbuster film!",
+        ratings: { guardian: 5, telegraph: 5, timeout: 5 }, cast: "Rotating cast", posterColor: "from-green-700 to-emerald-900", posterUrl: "https://www.dresscircle.london/products/wicked-the-musical-london-poster" },
+
+      { id: 6, title: "The Lion King", venue: "Lyceum Theatre", city: "London", genre: "Musical", startDate: null, endDate: "2026-11-01", dateNote: "Until 1 Nov 2026",
+        description: "Disney's spectacular stage adaptation with breathtaking puppetry by Julie Taymor. Simba's journey from cub to king, featuring Elton John & Tim Rice's 'Circle of Life' and 'Hakuna Matata'.",
+        ratings: { guardian: 5, telegraph: 5, timeout: 5 }, cast: "Rotating cast", posterColor: "from-amber-600 to-orange-700", posterUrl: null },
+
+      { id: 7, title: "Hamilton", venue: "Victoria Palace Theatre", city: "London", genre: "Musical", startDate: null, endDate: "2026-10-03", dateNote: "Until 3 Oct 2026",
+        description: "Lin-Manuel Miranda's revolutionary hip-hop musical about America's Founding Father Alexander Hamilton. The show that changed musical theatre forever. 'Not throwing away my shot!'",
+        ratings: { guardian: 5, telegraph: 5, timeout: 5 }, cast: "Rotating cast", posterColor: "from-amber-800 to-amber-950", posterUrl: "https://westendmerchandiseshop.com/products/hamilton-poster" },
+
+      { id: 8, title: "The Book of Mormon", venue: "Prince of Wales Theatre", city: "London", genre: "Musical", startDate: null, endDate: "2026-05-16", dateNote: "Until 16 May 2026",
+        description: "From the creators of South Park - a hilariously irreverent musical about two mismatched missionaries sent to Uganda. Brilliantly offensive and surprisingly heartfelt. Winner of 9 Tony Awards.",
+        ratings: { guardian: 5, telegraph: 5, timeout: 5 }, cast: "Rotating cast", posterColor: "from-sky-500 to-blue-700", posterUrl: null },
+
+      { id: 9, title: "Matilda The Musical", venue: "Cambridge Theatre", city: "London", genre: "Musical", startDate: null, endDate: "2027-01-17", dateNote: "Until 17 Jan 2027",
+        description: "Roald Dahl's beloved story with Tim Minchin's witty score. A genius girl takes on her awful parents and the terrifying headmistress Miss Trunchbull. 'When I grow up, I will be brave enough...'",
+        ratings: { guardian: 5, telegraph: 5, timeout: 5 }, cast: "Rotating children cast", posterColor: "from-pink-600 to-fuchsia-800", posterUrl: null },
+
+      { id: 10, title: "Six The Musical", venue: "Vaudeville Theatre", city: "London", genre: "Musical", startDate: null, endDate: "2027-01-31", dateNote: "Until 31 Jan 2027",
+        description: "Henry VIII's six wives take the mic in a 75-minute pop concert. From 'divorced, beheaded, died' to fierce queens telling their own stories. A global phenomenon born at the Edinburgh Fringe.",
+        ratings: { guardian: 4, telegraph: 5, timeout: 5 }, cast: "Rotating cast", posterColor: "from-purple-600 to-violet-800", posterUrl: null },
+
+      { id: 11, title: "Harry Potter and the Cursed Child", venue: "Palace Theatre", city: "London", genre: "Play", startDate: null, endDate: "2026-07-26", dateNote: "Until 26 Jul 2026",
+        description: "The eighth Harry Potter story, 19 years later. Harry's son Albus befriends Scorpius Malfoy and together they meddle with time. Mind-blowing stage magic that must be seen to be believed.",
+        ratings: { guardian: 4, telegraph: 5, timeout: 5 }, cast: "Rotating cast", posterColor: "from-slate-800 to-slate-950", posterUrl: null },
+
+      { id: 12, title: "My Neighbour Totoro", venue: "Gillian Lynne Theatre", city: "London", genre: "Play", startDate: null, endDate: "2026-08-30", dateNote: "Until 30 Aug 2026",
+        description: "Studio Ghibli's magical film brought to life with stunning puppetry by RSC. Two sisters discover forest spirits including the lovable giant Totoro. A heartwarming celebration of childhood wonder.",
+        ratings: { guardian: 5, telegraph: 5, timeout: 5 }, cast: "Rotating cast", posterColor: "from-green-500 to-teal-700", posterUrl: null },
+
+      { id: 13, title: "Stranger Things: The First Shadow", venue: "Phoenix Theatre", city: "London", genre: "Play", startDate: null, endDate: "2026-05-31", dateNote: "Until 31 May 2026",
+        description: "The origin story of Hawkins, 1959. Discover what happened before Eleven, before the Upside Down. Spectacular theatrical effects bring the Netflix phenomenon to stage for the first time.",
+        ratings: { guardian: 4, telegraph: 4, timeout: 4 }, cast: "Rotating cast", posterColor: "from-red-800 to-rose-950", posterUrl: null },
+
+      { id: 14, title: "Back to the Future: The Musical", venue: "Adelphi Theatre", city: "London", genre: "Musical", startDate: null, endDate: "2026-04-12", dateNote: "Until 12 Apr 2026",
+        description: "Great Scott! The beloved 1985 film hits 88mph on stage. Marty McFly, Doc Brown and the DeLorean time machine. Features new songs alongside 'The Power of Love' and 'Johnny B. Goode'.",
+        ratings: { guardian: 4, telegraph: 4, timeout: 4 }, cast: "Rotating cast", posterColor: "from-orange-500 to-amber-700", posterUrl: null },
+
+      { id: 15, title: "The Devil Wears Prada", venue: "Dominion Theatre", city: "London", genre: "Musical", startDate: null, endDate: "2026-09-26", dateNote: "Until 26 Sep 2026",
+        description: "Elton John's new musical based on the iconic film. Andy Sachs navigates the cutthroat world of high fashion under the fearsome Miranda Priestly. 'That's all.'",
+        ratings: { guardian: 3, telegraph: 3, timeout: 3 }, cast: "Vanessa Williams", posterColor: "from-fuchsia-700 to-pink-900", posterUrl: null },
+
+      { id: 16, title: "Hadestown", venue: "Lyric Theatre", city: "London", genre: "Musical", startDate: null, endDate: "2026-09-27", dateNote: "Until 27 Sep 2026",
+        description: "Anaïs Mitchell's folk opera reimagines Greek myths. Orpheus journeys to the underworld to rescue Eurydice from Hades. Haunting, beautiful and utterly original. Winner of 8 Tony Awards.",
+        ratings: { guardian: 5, telegraph: 5, timeout: 5 }, cast: "Rotating cast", posterColor: "from-zinc-700 to-stone-900", posterUrl: null },
+
+      { id: 17, title: "Oliver!", venue: "Gielgud Theatre", city: "London", genre: "Musical", startDate: null, endDate: "2026-10-04", dateNote: "Until 4 Oct 2026",
+        description: "Cameron Mackintosh & Matthew Bourne's new staging of Lionel Bart's classic. Oliver Twist escapes the workhouse to join Fagin's gang. 'Consider yourself one of us!'",
+        ratings: { guardian: 4, telegraph: 4, timeout: 4 }, cast: "Rotating cast", posterColor: "from-stone-600 to-stone-800", posterUrl: null },
+
+      { id: 18, title: "Operation Mincemeat", venue: "Fortune Theatre", city: "London", genre: "Musical", startDate: null, endDate: "2026-09-26", dateNote: "Until 26 Sep 2026",
+        description: "The hilariously true story of the most bizarre secret mission that helped win WWII. Four performers play everyone from Churchill to Hitler in this ingenious, award-winning musical comedy.",
+        ratings: { guardian: 5, telegraph: 5, timeout: 5 }, cast: "Original cast", posterColor: "from-slate-600 to-slate-800", posterUrl: null },
+
+      { id: 19, title: "Cabaret", venue: "Kit Kat Club at Playhouse", city: "London", genre: "Musical", startDate: null, endDate: "2026-09-26", dateNote: "Until 26 Sep 2026",
+        description: "Immersive revival set inside a recreated 1930s Berlin nightclub. Life is a Cabaret, old chum - but the shadow of the Nazis looms. Rebecca Frecknall's Olivier Award-winning production.",
+        ratings: { guardian: 5, telegraph: 5, timeout: 5 }, cast: "Rotating cast", posterColor: "from-red-700 to-rose-900", posterUrl: null },
+
+      { id: 20, title: "Oh, Mary!", venue: "Trafalgar Theatre", city: "London", genre: "Play", startDate: null, endDate: "2026-04-25", dateNote: "Until 25 Apr 2026",
+        description: "Cole Escola's uproariously dark comedy about Mary Todd Lincoln in the weeks before the assassination. Broadway's funniest hit crosses the Atlantic. Absurd, outrageous, unmissable.",
+        ratings: { guardian: 4, telegraph: 4, timeout: 5 }, cast: "Mason Alexander Park", posterColor: "from-rose-600 to-red-800", posterUrl: null },
+
+      { id: 21, title: "Dracula (Cynthia Erivo)", venue: "Noël Coward Theatre", city: "London", genre: "Play", startDate: "2026-02-04", endDate: null, dateNote: "From 4 Feb 2026",
+        description: "Wicked star Cynthia Erivo plays ALL 23 characters in Kip Williams' technological marvel. The Picture of Dorian Gray team brings Bram Stoker's horror classic to terrifying life.",
+        ratings: { guardian: null, telegraph: null, timeout: null }, cast: "Cynthia Erivo", posterColor: "from-red-950 to-black", posterUrl: null },
+
+      { id: 22, title: "Into the Woods", venue: "Bridge Theatre", city: "London", genre: "Musical", startDate: "2026-01-15", endDate: "2026-05-30", dateNote: "15 Jan - 30 May 2026",
+        description: "Sondheim's fairy tale masterpiece gets a major revival. The Baker, Cinderella, Jack and Little Red Riding Hood discover 'happily ever after' isn't so simple. Be careful what you wish for.",
+        ratings: { guardian: 5, telegraph: 5, timeout: 5 }, cast: "TBA", posterColor: "from-emerald-800 to-green-950", posterUrl: null },
+
+      { id: 23, title: "Grace Pervades (Ralph Fiennes)", venue: "Theatre Royal Haymarket", city: "London", genre: "Play", startDate: "2026-04-24", endDate: "2026-07-11", dateNote: "24 Apr - 11 Jul 2026",
+        description: "David Hare's new play about Victorian stage legends Henry Irving and Ellen Terry. Ralph Fiennes is 'utterly compelling' in this intelligent drama about art, love and legacy.",
+        ratings: { guardian: 4, telegraph: 4, timeout: null }, cast: "Ralph Fiennes, Miranda Raison", posterColor: "from-amber-800 to-yellow-900", posterUrl: null },
+
+      { id: 24, title: "Inter Alia (Rosamund Pike)", venue: "Wyndham's Theatre", city: "London", genre: "Play", startDate: "2026-03-19", endDate: "2026-06-20", dateNote: "19 Mar - 20 Jun 2026",
+        description: "From the team behind Prima Facie. Rosamund Pike plays a Crown Court Judge whose life is thrown off balance. A 'searing legal drama' about modern masculinity and motherhood.",
+        ratings: { guardian: 4, telegraph: 4, timeout: 4 }, cast: "Rosamund Pike", posterColor: "from-orange-700 to-amber-900", posterUrl: null },
+
+      { id: 25, title: "Romeo & Juliet (Sadie Sink)", venue: "Harold Pinter Theatre", city: "London", genre: "Play", startDate: "2026-03-16", endDate: "2026-06-06", dateNote: "16 Mar - 6 Jun 2026",
+        description: "Stranger Things star Sadie Sink makes her West End debut as Juliet opposite Noah Jupe's Romeo. Sam Gold directs Shakespeare's timeless tragedy of star-crossed lovers.",
+        ratings: { guardian: null, telegraph: null, timeout: null }, cast: "Sadie Sink, Noah Jupe", posterColor: "from-rose-700 to-red-900", posterUrl: null },
+
+      { id: 26, title: "All My Sons (Bryan Cranston)", venue: "Wyndham's Theatre", city: "London", genre: "Play", startDate: null, endDate: "2026-03-07", dateNote: "Until 7 Mar 2026",
+        description: "Breaking Bad's Bryan Cranston stars in Arthur Miller's devastating drama. A successful businessman faces the consequences of wartime decisions. 'Magnetic' - The Independent.",
+        ratings: { guardian: 4, telegraph: 4, timeout: 4 }, cast: "Bryan Cranston, Marianne Jean-Baptiste", posterColor: "from-slate-700 to-gray-900", posterUrl: null },
+
+      { id: 27, title: "High Noon (Billy Crudup)", venue: "Harold Pinter Theatre", city: "London", genre: "Play", startDate: null, endDate: "2026-03-07", dateNote: "Until 7 Mar 2026",
+        description: "The legendary Western becomes a stage thriller. Billy Crudup and Denise Gough star in this world premiere about a sheriff facing a showdown alone. High stakes drama.",
+        ratings: { guardian: 4, telegraph: 4, timeout: null }, cast: "Billy Crudup, Denise Gough", posterColor: "from-amber-700 to-orange-900", posterUrl: null },
+
+      { id: 28, title: "Beetlejuice The Musical", venue: "Prince Edward Theatre", city: "London", genre: "Musical", startDate: "2026-05-20", endDate: "2027-04-17", dateNote: "20 May 2026 - Apr 2027",
+        description: "The ghost with the most finally haunts London! Tim Burton's cult film becomes a spectacular musical comedy. 'Day-O' has never been so darkly hilarious. It's showtime!",
+        ratings: { guardian: null, telegraph: null, timeout: null }, cast: "TBA", posterColor: "from-purple-800 to-violet-950", posterUrl: null },
+
+      { id: 29, title: "Kinky Boots (Johannes Radebe)", venue: "London Coliseum", city: "London", genre: "Musical", startDate: "2026-03-17", endDate: "2026-07-11", dateNote: "17 Mar - 11 Jul 2026",
+        description: "Strictly Come Dancing's Johannes Radebe makes his West End debut as Lola in Cyndi Lauper's feel-good musical. A shoe factory is saved by fabulous footwear. 'Raise you up!'",
+        ratings: { guardian: null, telegraph: null, timeout: null }, cast: "Johannes Radebe", posterColor: "from-pink-600 to-red-700", posterUrl: null },
+
+      { id: 30, title: "Avenue Q", venue: "Shaftesbury Theatre", city: "London", genre: "Musical", startDate: "2026-03-20", endDate: "2026-08-29", dateNote: "20 Mar - 29 Aug 2026",
+        description: "The R-rated Sesame Street parody returns! Puppets and humans navigate life, love and unemployment. 'The Internet Is For...' well, you know. Hilariously inappropriate.",
+        ratings: { guardian: 4, telegraph: 4, timeout: 4 }, cast: "TBA", posterColor: "from-orange-500 to-amber-600", posterUrl: null },
+
+      { id: 31, title: "Jesus Christ Superstar", venue: "London Palladium", city: "London", genre: "Musical", startDate: "2026-06-20", endDate: "2026-09-05", dateNote: "20 Jun - 5 Sep 2026",
+        description: "Andrew Lloyd Webber & Tim Rice's rock opera returns to the Palladium. The final week of Jesus's life told through the eyes of Judas. 'Superstar - do you think you're what they say you are?'",
+        ratings: { guardian: null, telegraph: null, timeout: null }, cast: "TBA", posterColor: "from-yellow-600 to-amber-800", posterUrl: null },
+
+      { id: 32, title: "Pride The Musical", venue: "National Theatre", city: "London", genre: "Musical", startDate: "2026-06-11", endDate: "2026-09-12", dateNote: "11 Jun - 12 Sep 2026",
+        description: "The beloved 2014 film becomes a stage musical! When LGBTQ+ activists raise money for striking Welsh miners in 1984, an unlikely alliance forms. Joyful, political, triumphant.",
+        ratings: { guardian: null, telegraph: null, timeout: null }, cast: "TBA", posterColor: "from-pink-500 via-purple-500 to-blue-500", posterUrl: null },
+
+      { id: 33, title: "Ivanov (Chris Pine)", venue: "Bridge Theatre", city: "London", genre: "Play", startDate: "2026-07-04", endDate: "2026-09-19", dateNote: "4 Jul - 19 Sep 2026",
+        description: "Star Trek's Chris Pine makes his West End debut in Chekhov's comic drama, updated by Simon Stone. A landowner spirals into existential crisis. Hollywood meets Russian literature.",
+        ratings: { guardian: null, telegraph: null, timeout: null }, cast: "Chris Pine", posterColor: "from-blue-800 to-indigo-900", posterUrl: null },
+
+      { id: 34, title: "One Flew Over the Cuckoo's Nest", venue: "Old Vic", city: "London", genre: "Play", startDate: "2026-04-01", endDate: "2026-05-23", dateNote: "1 Apr - 23 May 2026",
+        description: "Ken Kesey's counterculture classic with Aaron Pierre (Rebel Ridge) and Giles Terera (Hamilton's original Burr). McMurphy takes on Nurse Ratched. Save up to 60% on tickets.",
+        ratings: { guardian: null, telegraph: null, timeout: null }, cast: "Aaron Pierre, Giles Terera", posterColor: "from-teal-700 to-cyan-900", posterUrl: null },
+
+      { id: 35, title: "Shadowlands (Hugh Bonneville)", venue: "Aldwych Theatre", city: "London", genre: "Play", startDate: "2026-02-05", endDate: "2026-05-09", dateNote: "5 Feb - 9 May 2026",
+        description: "Downton Abbey's Hugh Bonneville stars as C.S. Lewis falling unexpectedly in love with American poet Joy Davidman. A poignant true story of love found and lost.",
+        ratings: { guardian: null, telegraph: null, timeout: null }, cast: "Hugh Bonneville, Maggie Siff", posterColor: "from-slate-600 to-gray-800", posterUrl: null },
+
+      { id: 36, title: "The Unlikely Pilgrimage of Harold Fry", venue: "Theatre Royal Haymarket", city: "London", genre: "Musical", startDate: "2026-01-29", endDate: "2026-04-18", dateNote: "29 Jan - 18 Apr 2026",
+        description: "Rachel Joyce's bestseller becomes a joyous musical with songs by Passenger. A retired man walks 600 miles across England to see a dying friend. Life-affirming and beautiful.",
+        ratings: { guardian: 5, telegraph: 4, timeout: null }, cast: "Mark Addy, Jenna Russell", posterColor: "from-sky-500 to-blue-700", posterUrl: null },
+
+      // ============ EDINBURGH ============
+      { id: 100, title: "Chariots of Fire", venue: "King's Theatre", city: "Edinburgh", genre: "Play", startDate: "2026-09-15", endDate: "2026-09-19", dateNote: "15-19 Sep 2026",
+        description: "Two men. One Olympic dream. Based on the Oscar-winning film about Eric Liddell and Harold Abrahams at the 1924 Paris Olympics. The King's Theatre reopening season begins!",
+        ratings: { guardian: null, telegraph: null, timeout: null }, cast: "TBA", posterColor: "from-blue-600 to-sky-800", posterUrl: null },
+
+      { id: 101, title: "Wallace - New Musical", venue: "King's Theatre", city: "Edinburgh", genre: "Musical", startDate: "2026-09-30", endDate: "2026-10-03", dateNote: "30 Sep - 3 Oct 2026",
+        description: "A thrilling new Scottish musical about William Wallace. Was he hero, rebel, or myth? Rob Drummond's script with rapper Dave Hook. Raw Material produce this homegrown epic.",
+        ratings: { guardian: null, telegraph: null, timeout: null }, cast: "TBA", posterColor: "from-blue-700 to-indigo-900", posterUrl: null },
+
+      { id: 102, title: "Operation Mincemeat", venue: "King's Theatre", city: "Edinburgh", genre: "Musical", startDate: "2026-11-02", endDate: "2026-11-07", dateNote: "2-7 Nov 2026",
+        description: "The Olivier Award-winning musical about WWII's most bizarre spy mission comes to Edinburgh. Four performers, countless characters, one hilarious true story.",
+        ratings: { guardian: 5, telegraph: 5, timeout: 5 }, cast: "Tour cast", posterColor: "from-slate-600 to-slate-800", posterUrl: null },
+
+      { id: 103, title: "The Steamie", venue: "King's Theatre", city: "Edinburgh", genre: "Play", startDate: "2026-10-05", endDate: "2026-10-10", dateNote: "5-10 Oct 2026",
+        description: "Tony Roper's beloved Scottish classic returns. Hogmanay in a 1950s Glasgow washhouse where Magrit, Dolly and friends share secrets, dreams and lots of laughs.",
+        ratings: { guardian: null, telegraph: null, timeout: null }, cast: "TBA", posterColor: "from-stone-500 to-stone-700", posterUrl: null },
+
+      { id: 104, title: "Back to the Future", venue: "Edinburgh Playhouse", city: "Edinburgh", genre: "Musical", startDate: "2026-12-01", endDate: null, dateNote: "Dec 2026 (4 weeks)",
+        description: "Great Scott! The DeLorean lands in Edinburgh. First ever UK tour of the hit West End musical. Marty, Doc and 1.21 gigawatts of theatrical spectacle.",
+        ratings: { guardian: 4, telegraph: 4, timeout: 4 }, cast: "Tour cast", posterColor: "from-orange-500 to-amber-700", posterUrl: null },
+
+      { id: 105, title: "SIX The Musical", venue: "Festival Theatre", city: "Edinburgh", genre: "Musical", startDate: "2026-09-01", endDate: null, dateNote: "Sep 2026",
+        description: "The Tudor queens rock concert returns to where it began! Born at the Edinburgh Fringe, Six comes home. From 'divorced, beheaded, died' to pop superstardom.",
+        ratings: { guardian: 4, telegraph: 5, timeout: 5 }, cast: "Tour cast", posterColor: "from-purple-600 to-violet-800", posterUrl: null },
+
+      { id: 106, title: "Annie", venue: "Edinburgh Playhouse", city: "Edinburgh", genre: "Musical", startDate: "2026-09-01", endDate: null, dateNote: "Sep 2026",
+        description: "The sun'll come out tomorrow! The world's favourite family musical brings optimistic orphan Annie to Edinburgh. Tomorrow is only a day away...",
+        ratings: { guardian: null, telegraph: null, timeout: null }, cast: "Tour cast", posterColor: "from-red-500 to-rose-700", posterUrl: null },
+
+      // ============ GLASGOW ============
+      { id: 150, title: "Hamilton", venue: "Theatre Royal", city: "Glasgow", genre: "Musical", startDate: "2026-10-01", endDate: "2026-12-01", dateNote: "Oct - Dec 2026",
+        description: "Lin-Manuel Miranda's revolutionary musical finally comes to Glasgow! The story of America's scrappiest Founding Father, told through hip-hop. Don't throw away your shot!",
+        ratings: { guardian: 5, telegraph: 5, timeout: 5 }, cast: "Tour cast", posterColor: "from-amber-800 to-amber-950", posterUrl: null },
+
+      { id: 151, title: "Miss Saigon", venue: "King's Theatre", city: "Glasgow", genre: "Musical", startDate: "2026-06-09", endDate: "2026-06-20", dateNote: "9-20 Jun 2026",
+        description: "The legendary musical returns after 35 years. A Vietnamese girl and American GI fall in love during the fall of Saigon. Cameron Mackintosh's spectacular new production.",
+        ratings: { guardian: 4, telegraph: 4, timeout: 4 }, cast: "Seann Miley Moore, Julianne Pundan", posterColor: "from-rose-800 to-red-950", posterUrl: null },
+
+      { id: 152, title: "Mean Girls The Musical", venue: "King's Theatre", city: "Glasgow", genre: "Musical", startDate: "2026-06-29", endDate: "2026-07-11", dateNote: "29 Jun - 11 Jul 2026",
+        description: "Get in, loser, we're going to Glasgow! Tina Fey's razor-sharp comedy becomes a killer pop musical. Cady Heron navigates the jungle of high school. So fetch!",
+        ratings: { guardian: 4, telegraph: 4, timeout: null }, cast: "Faye Tozer", posterColor: "from-pink-500 to-fuchsia-700", posterUrl: null },
+
+      { id: 153, title: "Legally Blonde", venue: "King's Theatre", city: "Glasgow", genre: "Musical", startDate: "2026-04-01", endDate: null, dateNote: "Apr 2026",
+        description: "What, like it's hard? Elle Woods takes her Chihuahua and pink wardrobe to Harvard Law. The feel-good musical with serious girl power. Bend and snap!",
+        ratings: { guardian: 4, telegraph: 4, timeout: 4 }, cast: "Tour cast", posterColor: "from-pink-400 to-rose-600", posterUrl: null },
+
+      { id: 154, title: "Mamma Mia!", venue: "King's Theatre", city: "Glasgow", genre: "Musical", startDate: "2026-08-01", endDate: null, dateNote: "Aug 2026",
+        description: "Donna, the dynamos and ABBA's greatest hits come to Glasgow. Three possible dads, one Greek island wedding. The ultimate feel-good night out!",
+        ratings: { guardian: 4, telegraph: 4, timeout: 4 }, cast: "Tour cast", posterColor: "from-blue-500 to-cyan-600", posterUrl: null },
+
+      { id: 155, title: "CATS", venue: "Theatre Royal", city: "Glasgow", genre: "Musical", startDate: "2026-12-01", endDate: null, dateNote: "Dec 2026",
+        description: "Andrew Lloyd Webber's feline spectacular prowls into Glasgow. The Jellicle cats compete to ascend to the Heaviside Layer. Memory will never leave you.",
+        ratings: { guardian: 4, telegraph: 4, timeout: null }, cast: "Tour cast", posterColor: "from-amber-600 to-yellow-800", posterUrl: null },
+
+      { id: 156, title: "Scrooge The Musical (Marti Pellow)", venue: "SEC Armadillo", city: "Glasgow", genre: "Musical", startDate: "2026-12-12", endDate: "2027-01-10", dateNote: "12 Dec 2026 - 10 Jan 2027",
+        description: "Wet Wet Wet's Marti Pellow stars as Ebenezer Scrooge in this spectacular Christmas musical. Scottish star power meets Dickensian redemption.",
+        ratings: { guardian: null, telegraph: null, timeout: null }, cast: "Marti Pellow", posterColor: "from-emerald-700 to-green-900", posterUrl: null },
+
+      // ============ CAMBRIDGE ============
+      { id: 200, title: "Guys and Dolls", venue: "Arts Theatre", city: "Cambridge", genre: "Musical", startDate: "2026-01-14", endDate: "2026-01-17", dateNote: "14-17 Jan 2026",
+        description: "The perfect Golden Age musical. Gamblers, showgirls and salvation in 1950s New York. 'Luck Be a Lady', 'Sit Down, You're Rockin' the Boat' - it's all here!",
+        ratings: { guardian: null, telegraph: null, timeout: null }, cast: "TBA", posterColor: "from-red-600 to-rose-800", posterUrl: null },
+
+      { id: 201, title: "Inspector Morse: House of Ghosts", venue: "Arts Theatre", city: "Cambridge", genre: "Play", startDate: "2026-02-10", endDate: "2026-02-14", dateNote: "10-14 Feb 2026",
+        description: "The beloved detective returns in a brand new case. Colin Dexter's creation investigates a murder at an Oxford college. 'Lewis, get the car.'",
+        ratings: { guardian: null, telegraph: null, timeout: null }, cast: "TBA", posterColor: "from-slate-700 to-gray-900", posterUrl: null },
+
+      { id: 202, title: "Sir Derek Jacobi in Conversation", venue: "Arts Theatre", city: "Cambridge", genre: "Talk", startDate: "2026-01-29", endDate: "2026-01-29", dateNote: "29 Jan 2026",
+        description: "The legendary actor shares stories from his extraordinary career. From I, Claudius to the stage, an intimate evening with a true theatrical knight.",
+        ratings: { guardian: null, telegraph: null, timeout: null }, cast: "Sir Derek Jacobi", posterColor: "from-amber-700 to-orange-900", posterUrl: null },
+
+      { id: 203, title: "Noises Off", venue: "ADC Theatre", city: "Cambridge", genre: "Comedy", startDate: "2026-04-14", endDate: "2026-04-18", dateNote: "14-18 Apr 2026",
+        description: "Michael Frayn's backstage farce - the funniest play ever written about theatre. Watch a terrible play fall apart from both sides of the curtain. Chaos guaranteed.",
+        ratings: { guardian: 5, telegraph: 5, timeout: 5 }, cast: "Student cast", posterColor: "from-red-500 to-orange-700", posterUrl: null },
+
+      // ============ NEW LONDON SHOWS ============
+      { id: 37, title: "MJ The Musical", venue: "Prince Edward Theatre", city: "London", genre: "Musical", startDate: null, endDate: "2026-03-28", dateNote: "Until 28 Mar 2026",
+        description: "The Tony Award-winning musical about Michael Jackson. A theatrical experience packed with the King of Pop's most iconic songs including Beat It, Billie Jean, Thriller, and Smooth Criminal.",
+        ratings: { guardian: 4, telegraph: 4, timeout: 4 }, cast: "Rotating cast", posterColor: "from-purple-700 to-fuchsia-900", posterUrl: "https://westendmerchandiseshop.com/products/mj-the-musical-poster" },
+
+      { id: 38, title: "Starlight Express", venue: "Troubadour Wembley Park Theatre", city: "London", genre: "Musical", startDate: null, endDate: "2026-05-03", dateNote: "Until 3 May 2026",
+        description: "Andrew Lloyd Webber's high-octane roller-skating spectacular! An incredible cast of 40 whizz around on skates in a specially designed theatre. Features AC/DC, Make Up My Heart, and Light at the End of the Tunnel.",
+        ratings: { guardian: 4, telegraph: 4, timeout: 5 }, cast: "Ensemble cast", posterColor: "from-cyan-600 to-blue-800", posterUrl: "https://shop-starlightexpresslondon.com/product/poster/" },
+
+      { id: 39, title: "Othello", venue: "Theatre Royal Haymarket", city: "London", genre: "Play", startDate: null, endDate: "2026-03-01", dateNote: "Until 1 Mar 2026",
+        description: "Shakespeare's timeless tragedy directed by Tom Morris. David Harewood and Toby Jones star in this powerful production set in a Venice plagued by political turmoil and jealousy.",
+        ratings: { guardian: 4, telegraph: 4, timeout: null }, cast: "David Harewood, Toby Jones, Caitlin FitzGerald", posterColor: "from-emerald-800 to-teal-950", posterUrl: null },
+
+      // ============ ADDITIONAL GLASGOW SHOWS ============
+      { id: 157, title: "The Red Shoes", venue: "King's Theatre", city: "Glasgow", genre: "Ballet", startDate: "2026-01-27", endDate: "2026-01-31", dateNote: "27-31 Jan 2026",
+        description: "Matthew Bourne's spectacular ballet based on the classic film. A young dancer is consumed by her obsession with a pair of magical red shoes. Gorgeous choreography and stunning visuals.",
+        ratings: { guardian: 5, telegraph: 5, timeout: 5 }, cast: "Matthew Bourne's New Adventures", posterColor: "from-red-600 to-rose-800", posterUrl: null },
+
+      { id: 158, title: "Top Hat", venue: "King's Theatre", city: "Glasgow", genre: "Musical", startDate: "2026-02-03", endDate: "2026-02-07", dateNote: "3-7 Feb 2026",
+        description: "Irving Berlin's classic musical comedy. Mistaken identity, romance, and unforgettable songs including Cheek to Cheek and Puttin' On the Ritz. Based on the Fred Astaire and Ginger Rogers film.",
+        ratings: { guardian: 4, telegraph: 4, timeout: 4 }, cast: "Tour cast", posterColor: "from-slate-700 to-gray-900", posterUrl: null },
+
+      { id: 159, title: "The Snow Queen", venue: "Theatre Royal", city: "Glasgow", genre: "Ballet", startDate: "2026-01-03", endDate: "2026-01-17", dateNote: "3-17 Jan 2026",
+        description: "Scottish Ballet's enchanting winter tale. Hans Christian Andersen's classic story of friendship, love and bravery set to stunning choreography. Perfect for the whole family.",
+        ratings: { guardian: null, telegraph: null, timeout: null }, cast: "Scottish Ballet", posterColor: "from-blue-300 to-cyan-500", posterUrl: null },
+
+      // ============ ADDITIONAL EDINBURGH SHOWS ============
+      { id: 107, title: "The Choir of Man", venue: "Festival Theatre", city: "Edinburgh", genre: "Musical", startDate: "2026-12-01", endDate: null, dateNote: "Dec 2026",
+        description: "The ultimate pint-sized party! Nine talented guys unite to create a riotous evening of pub singalong, foot-stomping music and brotherhood. A rowdy, feel-good musical theatre experience.",
+        ratings: { guardian: 4, telegraph: 4, timeout: 4 }, cast: "Tour cast", posterColor: "from-amber-600 to-orange-800", posterUrl: null },
+
+      { id: 108, title: "Crown of Blood", venue: "King's Theatre", city: "Edinburgh", genre: "Play", startDate: "2026-10-20", endDate: "2026-10-24", dateNote: "20-24 Oct 2026",
+        description: "A stunning Yoruba adaptation of Shakespeare's Macbeth. Set in 11th century Yorubaland, this production explores ambition, power and fate through West African culture and traditions.",
+        ratings: { guardian: null, telegraph: null, timeout: null }, cast: "TBA", posterColor: "from-orange-700 to-red-900", posterUrl: null },
+    ];
+
+    const cities = ['All', ...new Set(shows.map(s => s.city))];
+    const genres = ['All', ...new Set(shows.map(s => s.genre))];
+
+    function TheatreSwiper() {
+      const [mode, setMode] = useState('browse'); // 'browse' or 'list'
+      const [currentIndex, setCurrentIndex] = useState(0);
+      const [shortlist, setShortlist] = useState(new Set());
+      const [ignored, setIgnored] = useState(new Set());
+      const [cityFilter, setCityFilter] = useState('All');
+      const [genreFilter, setGenreFilter] = useState('All');
+      const [searchTerm, setSearchTerm] = useState('');
+
+      const filteredShows = useMemo(() => {
+        return shows.filter(show => {
+          const matchesSearch = show.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                               show.venue.toLowerCase().includes(searchTerm.toLowerCase());
+          const matchesCity = cityFilter === 'All' || show.city === cityFilter;
+          const matchesGenre = genreFilter === 'All' || show.genre === genreFilter;
+          const notIgnored = !ignored.has(show.id);
+          return matchesSearch && matchesCity && matchesGenre && notIgnored;
+        });
+      }, [searchTerm, cityFilter, genreFilter, ignored]);
+
+      const currentShow = filteredShows[currentIndex];
+
+      const goNext = useCallback(() => {
+        if (currentIndex < filteredShows.length - 1) {
+          setCurrentIndex(prev => prev + 1);
+        }
+      }, [currentIndex, filteredShows.length]);
+
+      const goPrev = useCallback(() => {
+        if (currentIndex > 0) {
+          setCurrentIndex(prev => prev - 1);
+        }
+      }, [currentIndex]);
+
+      const addToShortlist = useCallback(() => {
+        if (currentShow) {
+          setShortlist(prev => new Set([...prev, currentShow.id]));
+          goNext();
+        }
+      }, [currentShow, goNext]);
+
+      const ignoreShow = useCallback(() => {
+        if (currentShow) {
+          setIgnored(prev => new Set([...prev, currentShow.id]));
+          // Stay at same index (next show will appear)
+          if (currentIndex >= filteredShows.length - 1) {
+            setCurrentIndex(prev => Math.max(0, prev - 1));
+          }
+        }
+      }, [currentShow, currentIndex, filteredShows.length]);
+
+      const removeFromShortlist = (id) => {
+        setShortlist(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(id);
+          return newSet;
+        });
+      };
+
+      // Keyboard navigation
+      useEffect(() => {
+        const handleKeyDown = (e) => {
+          if (mode === 'browse') {
+            switch(e.key) {
+              case 'ArrowRight':
+                goNext();
+                break;
+              case 'ArrowLeft':
+                goPrev();
+                break;
+              case 'Enter':
+                addToShortlist();
+                break;
+              case 'Backspace':
+              case 'Delete':
+                e.preventDefault();
+                ignoreShow();
+                break;
+            }
+          }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+      }, [mode, goNext, goPrev, addToShortlist, ignoreShow]);
+
+      const generateICS = () => {
+        const shortlistedShows = shows.filter(s => shortlist.has(s.id));
+
+        const formatDate = (dateStr) => {
+          if (!dateStr) return null;
+          const d = new Date(dateStr);
+          return d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+        };
+
+        let icsContent = [
+          'BEGIN:VCALENDAR',
+          'VERSION:2.0',
+          'PRODID:-//UK Theatre Planner//EN',
+          'CALSCALE:GREGORIAN',
+          'METHOD:PUBLISH',
+        ];
+
+        shortlistedShows.forEach(show => {
+          const uid = `${show.id}-${Date.now()}@uk-theatre-planner`;
+          const now = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+
+          let dtstart, dtend;
+          if (show.startDate) {
+            dtstart = formatDate(show.startDate);
+            dtend = show.endDate ? formatDate(show.endDate) : formatDate(show.startDate);
+          } else {
+            const today = new Date();
+            const dateOnly = today.toISOString().split('T')[0].replace(/-/g, '');
+            dtstart = dateOnly;
+            dtend = dateOnly;
+          }
+
+          const description = `${show.genre}\\n\\nVenue: ${show.venue}, ${show.city}\\n\\nDates: ${show.dateNote}`;
+
+          icsContent.push('BEGIN:VEVENT');
+          icsContent.push(`UID:${uid}`);
+          icsContent.push(`DTSTAMP:${now}`);
+          if (show.startDate) {
+            icsContent.push(`DTSTART:${dtstart}`);
+            icsContent.push(`DTEND:${dtend}`);
+          } else {
+            icsContent.push(`DTSTART;VALUE=DATE:${dtstart}`);
+            icsContent.push(`DTEND;VALUE=DATE:${dtend}`);
+          }
+          icsContent.push(`SUMMARY:${show.title} - ${show.city}`);
+          icsContent.push(`DESCRIPTION:${description}`);
+          icsContent.push(`LOCATION:${show.venue}, ${show.city}`);
+          icsContent.push('END:VEVENT');
+        });
+
+        icsContent.push('END:VCALENDAR');
+
+        const blob = new Blob([icsContent.join('\r\n')], { type: 'text/calendar;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'theatre-shortlist.ics';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      };
+
+      const renderStars = (rating) => {
+        if (!rating) return <span className="text-gray-500 text-sm">No rating</span>;
+        return (
+          <div className="flex gap-0.5">
+            {[...Array(5)].map((_, i) => (
+              <Star
+                key={i}
+                className={`w-4 h-4 ${i < rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-600'}`}
+              />
+            ))}
+          </div>
+        );
+      };
+
+      const getCityBadgeColor = (city) => {
+        switch(city) {
+          case 'London': return 'bg-red-500/80 text-white';
+          case 'Edinburgh': return 'bg-blue-500/80 text-white';
+          case 'Glasgow': return 'bg-green-500/80 text-white';
+          case 'Cambridge': return 'bg-amber-500/80 text-white';
+          default: return 'bg-purple-500/80 text-white';
+        }
+      };
+
+      // Browse Mode
+      if (mode === 'browse') {
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4 flex flex-col">
+            {/* Header */}
+            <div className="max-w-2xl mx-auto w-full mb-4">
+              <div className="flex items-center justify-between mb-4">
+                <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+                  <Theater className="w-6 h-6 text-amber-400" />
+                  Theatre Browser
+                </h1>
+                <button
+                  onClick={() => setMode('list')}
+                  className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-400 text-black rounded-lg font-medium"
+                >
+                  <List className="w-5 h-5" />
+                  Shortlist ({shortlist.size})
+                </button>
+              </div>
+
+              {/* Filters */}
+              <div className="flex gap-2 flex-wrap">
+                <select
+                  value={cityFilter}
+                  onChange={(e) => { setCityFilter(e.target.value); setCurrentIndex(0); }}
+                  className="px-3 py-1.5 bg-white/10 border border-purple-400/30 rounded-lg text-white text-sm"
+                >
+                  {cities.map(c => <option key={c} value={c}>{c === 'All' ? 'All Cities' : c}</option>)}
+                </select>
+                <select
+                  value={genreFilter}
+                  onChange={(e) => { setGenreFilter(e.target.value); setCurrentIndex(0); }}
+                  className="px-3 py-1.5 bg-white/10 border border-purple-400/30 rounded-lg text-white text-sm"
+                >
+                  {genres.map(g => <option key={g} value={g}>{g === 'All' ? 'All Genres' : g}</option>)}
+                </select>
+                <span className="text-purple-300 text-sm self-center ml-auto">
+                  {currentIndex + 1} / {filteredShows.length}
+                </span>
+              </div>
+            </div>
+
+            {/* Card */}
+            {currentShow ? (
+              <div className="flex-1 flex items-center justify-center">
+                <div className={`w-full max-w-lg bg-gradient-to-br ${currentShow.posterColor} rounded-2xl overflow-hidden shadow-2xl`}>
+                  {/* Poster area */}
+                  <div className="h-48 relative flex items-center justify-center bg-black/30 overflow-hidden">
+                    {currentShow.posterUrl ? (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                        <div className="text-white/60 text-sm text-center px-4">
+                          <Theater className="w-12 h-12 mx-auto mb-2 text-white/40" />
+                          <p className="text-xs">Official poster available</p>
+                          <a
+                            href={currentShow.posterUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-amber-400 hover:text-amber-300 underline text-xs"
+                          >
+                            View poster
+                          </a>
+                        </div>
+                      </div>
+                    ) : (
+                      <Theater className="w-24 h-24 text-white/20" />
+                    )}
+                    <div className="absolute top-4 left-4">
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${getCityBadgeColor(currentShow.city)}`}>
+                        {currentShow.city}
+                      </span>
+                    </div>
+                    <div className="absolute top-4 right-4">
+                      <span className="px-3 py-1 rounded-full text-sm font-medium bg-black/50 text-white">
+                        {currentShow.genre}
+                      </span>
+                    </div>
+                    {shortlist.has(currentShow.id) && (
+                      <div className="absolute bottom-4 right-4">
+                        <Heart className="w-8 h-8 fill-red-500 text-red-500" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Content */}
+                  <div className="p-6 bg-gradient-to-b from-transparent to-black/50">
+                    <h2 className="text-2xl font-bold text-white mb-2">{currentShow.title}</h2>
+
+                    <div className="flex items-center gap-2 text-white/80 text-sm mb-3">
+                      <MapPin className="w-4 h-4" />
+                      <span>{currentShow.venue}</span>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-white/80 text-sm mb-4">
+                      <Calendar className="w-4 h-4" />
+                      <span>{currentShow.dateNote}</span>
+                    </div>
+
+                    {currentShow.cast && (
+                      <p className="text-amber-300 text-sm mb-3">★ {currentShow.cast}</p>
+                    )}
+
+                    <p className="text-white/90 text-sm leading-relaxed mb-4">
+                      {currentShow.description}
+                    </p>
+
+                    {/* Ratings */}
+                    <div className="border-t border-white/20 pt-4">
+                      <p className="text-white/60 text-xs mb-2 uppercase tracking-wide">Critics' Ratings</p>
+                      <div className="grid grid-cols-3 gap-4">
+                        <div>
+                          <p className="text-white/50 text-xs mb-1">Guardian</p>
+                          {renderStars(currentShow.ratings?.guardian)}
+                        </div>
+                        <div>
+                          <p className="text-white/50 text-xs mb-1">Telegraph</p>
+                          {renderStars(currentShow.ratings?.telegraph)}
+                        </div>
+                        <div>
+                          <p className="text-white/50 text-xs mb-1">Time Out</p>
+                          {renderStars(currentShow.ratings?.timeout)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex-1 flex items-center justify-center text-purple-300">
+                <div className="text-center">
+                  <Theater className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                  <p>No more shows to browse!</p>
+                  <button
+                    onClick={() => setMode('list')}
+                    className="mt-4 px-6 py-2 bg-amber-500 text-black rounded-lg font-medium"
+                  >
+                    View Shortlist
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Controls */}
+            {currentShow && (
+              <div className="max-w-lg mx-auto w-full mt-6">
+                <div className="flex items-center justify-center gap-4">
+                  <button
+                    onClick={goPrev}
+                    disabled={currentIndex === 0}
+                    className="p-3 bg-white/10 hover:bg-white/20 disabled:opacity-30 rounded-full transition-all"
+                  >
+                    <ChevronLeft className="w-6 h-6 text-white" />
+                  </button>
+
+                  <button
+                    onClick={ignoreShow}
+                    className="p-4 bg-red-500/20 hover:bg-red-500/40 rounded-full transition-all group"
+                    title="Skip (Backspace)"
+                  >
+                    <X className="w-8 h-8 text-red-400 group-hover:text-red-300" />
+                  </button>
+
+                  <button
+                    onClick={addToShortlist}
+                    className={`p-4 rounded-full transition-all group ${
+                      shortlist.has(currentShow.id)
+                        ? 'bg-green-500/40'
+                        : 'bg-green-500/20 hover:bg-green-500/40'
+                    }`}
+                    title="Add to Shortlist (Enter)"
+                  >
+                    <Heart className={`w-8 h-8 ${
+                      shortlist.has(currentShow.id)
+                        ? 'fill-green-400 text-green-400'
+                        : 'text-green-400 group-hover:text-green-300'
+                    }`} />
+                  </button>
+
+                  <button
+                    onClick={goNext}
+                    disabled={currentIndex >= filteredShows.length - 1}
+                    className="p-3 bg-white/10 hover:bg-white/20 disabled:opacity-30 rounded-full transition-all"
+                  >
+                    <ChevronRight className="w-6 h-6 text-white" />
+                  </button>
+                </div>
+
+                {/* Keyboard hints */}
+                <div className="flex justify-center gap-6 mt-4 text-white/40 text-xs">
+                  <span className="flex items-center gap-1"><ArrowLeft className="w-3 h-3" /> Prev</span>
+                  <span className="flex items-center gap-1"><Delete className="w-3 h-3" /> Skip</span>
+                  <span className="flex items-center gap-1"><CornerDownLeft className="w-3 h-3" /> Add</span>
+                  <span className="flex items-center gap-1"><ArrowRight className="w-3 h-3" /> Next</span>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      // List Mode
+      const shortlistedShows = shows.filter(s => shortlist.has(s.id));
+
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4">
+          <div className="max-w-4xl mx-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <button
+                onClick={() => setMode('browse')}
+                className="flex items-center gap-2 text-purple-300 hover:text-white transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+                Back to browsing
+              </button>
+
+              <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+                <Heart className="w-6 h-6 text-red-400 fill-red-400" />
+                My Shortlist ({shortlist.size})
+              </h1>
+
+              <button
+                onClick={generateICS}
+                disabled={shortlist.size === 0}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                  shortlist.size > 0
+                    ? 'bg-amber-500 hover:bg-amber-400 text-black'
+                    : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                <Download className="w-5 h-5" />
+                Export .ics
+              </button>
+            </div>
+
+            {/* Shortlist */}
+            {shortlistedShows.length > 0 ? (
+              <div className="grid gap-4">
+                {shortlistedShows.map(show => (
+                  <div
+                    key={show.id}
+                    className={`bg-gradient-to-r ${show.posterColor} rounded-xl p-4 flex items-center gap-4`}
+                  >
+                    <div className="w-16 h-16 bg-black/30 rounded-lg flex items-center justify-center flex-shrink-0 relative group">
+                      <Theater className="w-8 h-8 text-white/40" />
+                      {show.posterUrl && (
+                        <a
+                          href={show.posterUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="absolute inset-0 flex items-center justify-center bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="View poster"
+                        >
+                          <span className="text-xs text-amber-400">View</span>
+                        </a>
+                      )}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-white font-semibold truncate">{show.title}</h3>
+                      <p className="text-white/70 text-sm truncate">{show.venue}, {show.city}</p>
+                      <p className="text-white/50 text-xs">{show.dateNote}</p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-1 rounded text-xs ${getCityBadgeColor(show.city)}`}>
+                        {show.city}
+                      </span>
+                      <button
+                        onClick={() => removeFromShortlist(show.id)}
+                        className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                      >
+                        <X className="w-5 h-5 text-white/60 hover:text-red-400" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-16 text-purple-300">
+                <Heart className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                <p className="text-lg mb-2">Your shortlist is empty</p>
+                <p className="text-sm text-purple-400">Browse shows and press Enter to add them</p>
+                <button
+                  onClick={() => setMode('browse')}
+                  className="mt-6 px-6 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg"
+                >
+                  Start Browsing
+                </button>
+              </div>
+            )}
+
+            {/* Stats */}
+            {shortlistedShows.length > 0 && (
+              <div className="mt-8 p-4 bg-white/5 rounded-xl">
+                <h3 className="text-white/60 text-sm mb-3 uppercase tracking-wide">Shortlist Summary</h3>
+                <div className="flex flex-wrap gap-4 text-sm">
+                  {['London', 'Edinburgh', 'Glasgow', 'Cambridge'].map(city => {
+                    const count = shortlistedShows.filter(s => s.city === city).length;
+                    if (count === 0) return null;
+                    return (
+                      <span key={city} className={`px-3 py-1 rounded-full ${getCityBadgeColor(city)}`}>
+                        {city}: {count}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // Render the app
+    ReactDOM.render(<TheatreSwiper />, document.getElementById('root'));
+  </script>
+</body>
+</html>
