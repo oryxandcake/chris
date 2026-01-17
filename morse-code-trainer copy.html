@@ -497,29 +497,26 @@
         // Multiplayer state
         let ws = null;
 
-        // Cool WW2/60s movie codenames
-        const codenames = [
-            'BROADSWORD', 'DANNY_BOY', 'OVERLORD', 'NEPTUNE', 'ANVIL',
-            'TIGER', 'COBRA', 'MARKET_GARDEN', 'EAGLE', 'FORTITUDE',
-            'BODYGUARD', 'MINCEMEAT', 'THUNDERBOLT', 'TORCH', 'HUSKY',
-            'AVALANCHE', 'SHINGLE', 'DRAGOON', 'WATCHTOWER', 'CARTWHEEL',
-            'FLINTLOCK', 'ICEBERG', 'CORONET', 'DOWNFALL', 'MANHATTAN',
-            'CROSSBOW', 'POINTBLANK', 'TIDAL_WAVE', 'CHASTISE', 'JERICHO',
-            'APHRODITE', 'BATTLEAXE', 'CRUSADER', 'COMPASS', 'SONNENBLUME',
-            'MERCURY', 'MARITA', 'PUNISHMENT', 'BARBAROSSA', 'TYPHOON',
-            'BLUE', 'URANUS', 'SATURN', 'LITTLE_SATURN', 'MARS',
-            'RING', 'BAGRATION', 'TEMPEST', 'KUTUZOV', 'RUMYANTSEV'
+        // Cool WW2/military callsigns
+        const callsigns = [
+            'ALPHA', 'BRAVO', 'CHARLIE', 'DELTA', 'ECHO', 'FOXTROT',
+            'GOLF', 'HOTEL', 'INDIA', 'JULIET', 'KILO', 'LIMA',
+            'MIKE', 'NOVEMBER', 'OSCAR', 'PAPA', 'QUEBEC', 'ROMEO',
+            'SIERRA', 'TANGO', 'UNIFORM', 'VICTOR', 'WHISKEY', 'XRAY',
+            'YANKEE', 'ZULU', 'EAGLE_1', 'EAGLE_2', 'HAWK_1', 'HAWK_2',
+            'VIPER_1', 'VIPER_2', 'FALCON_1', 'FALCON_2', 'TIGER_1', 'TIGER_2',
+            'PHANTOM_1', 'PHANTOM_2', 'THUNDER_1', 'THUNDER_2', 'LIGHTNING_1', 'LIGHTNING_2',
+            'REAPER_1', 'REAPER_2', 'GHOST_1', 'GHOST_2', 'SHADOW_1', 'SHADOW_2',
+            'RAPTOR_1', 'RAPTOR_2', 'MUSTANG_1', 'MUSTANG_2', 'EAGLE_3', 'HAWK_3'
         ];
 
-        // Get or create persistent user ID
-        let userId = localStorage.getItem('morseUserId');
+        // Get or create persistent user ID with unique session ID
+        let userId = sessionStorage.getItem('morseUserId');
         if (!userId) {
-            userId = codenames[Math.floor(Math.random() * codenames.length)];
-            // Add random number if codename collision
-            if (Math.random() > 0.7) {
-                userId += '_' + Math.floor(Math.random() * 99);
-            }
-            localStorage.setItem('morseUserId', userId);
+            userId = callsigns[Math.floor(Math.random() * callsigns.length)];
+            // Add unique session ID to ensure no duplicates
+            userId += '_' + Date.now().toString(36).substr(-4);
+            sessionStorage.setItem('morseUserId', userId);
         }
 
         let onlineUsers = new Map();
@@ -1066,6 +1063,9 @@
         }
 
         function startRemoteTone(userId) {
+            // Stop any existing tone for this user first
+            stopRemoteTone(userId);
+
             initAudio();
 
             const osc = audioContext.createOscillator();
@@ -1084,13 +1084,26 @@
         function stopRemoteTone(userId) {
             const remote = remoteOscillators.get(userId);
             if (remote) {
-                remote.gain.gain.setTargetAtTime(0, audioContext.currentTime, 0.01);
-                setTimeout(() => {
-                    if (remote.osc) {
-                        remote.osc.stop();
-                    }
+                try {
+                    remote.gain.gain.setTargetAtTime(0, audioContext.currentTime, 0.01);
+                    setTimeout(() => {
+                        try {
+                            if (remote.osc) {
+                                remote.osc.stop();
+                                remote.osc.disconnect();
+                            }
+                            if (remote.gain) {
+                                remote.gain.disconnect();
+                            }
+                        } catch (e) {
+                            // Already stopped
+                        }
+                        remoteOscillators.delete(userId);
+                    }, 50);
+                } catch (e) {
+                    // Cleanup anyway
                     remoteOscillators.delete(userId);
-                }, 50);
+                }
             }
         }
 
