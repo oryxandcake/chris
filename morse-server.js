@@ -48,6 +48,11 @@ server.on('connection', (ws) => {
                         userId: userId
                     }, userId);
                     break;
+
+                case 'ping':
+                    // Heartbeat - just acknowledge
+                    ws.send(JSON.stringify({ type: 'pong' }));
+                    break;
             }
         } catch (error) {
             console.error('Error processing message:', error);
