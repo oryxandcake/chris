@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ninja Runner</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #f7f7f7;
+            font-family: 'Courier New', monospace;
+        }
+
+        #gameContainer {
+            text-align: center;
+        }
+
+        canvas {
+            border: 1px solid #535353;
+            background: #f7f7f7;
+            display: block;
+            margin: 0 auto;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        #score {
+            font-size: 20px;
+            margin-top: 10px;
+            color: #535353;
+        }
+
+        #instructions {
+            margin-top: 10px;
+            color: #535353;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="800" height="200"></canvas>
+        <div id="score">HI 00000 00000</div>
+        <div id="instructions">Press SPACE or UP to jump</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Game variables
+        let gameRunning = false;
+        let gameOver = false;
+        let score = 0;
+        let highScore = 0;
+        let frameCount = 0;
+        let gameSpeed = 6;
+
+        // Ninja object
+        const ninja = {
+            x: 50,
+            y: 0,
+            width: 44,
+            height: 47,
+            jumping: false,
+            velocityY: 0,
+            gravity: 0.6,
+            jumpPower: -12,
+            groundY: canvas.height - 47 - 10,
+            frame: 0,
+            animationSpeed: 8
+        };
+
+        ninja.y = ninja.groundY;
+
+        // Obstacles array
+        let obstacles = [];
+        let clouds = [];
+
+        // Obstacle spawn timer
+        let obstacleTimer = 0;
+        let obstacleInterval = 100;
+
+        // Cloud spawn timer
+        let cloudTimer = 0;
+
+        // Draw pixel-art ninja (running animation)
+        function drawNinja() {
+            ctx.fillStyle = '#535353';
+
+            const legOffset = Math.floor(frameCount / ninja.animationSpeed) % 2;
+
+            // Head
+            ctx.fillRect(ninja.x + 14, ninja.y + 4, 16, 16);
+
+            // Eyes (white with black pupils)
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(ninja.x + 16, ninja.y + 8, 4, 4);
+            ctx.fillRect(ninja.x + 24, ninja.y + 8, 4, 4);
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(ninja.x + 18, ninja.y + 9, 2, 2);
+            ctx.fillRect(ninja.x + 26, ninja.y + 9, 2, 2);
+
+            ctx.fillStyle = '#535353';
+
+            // Body
+            ctx.fillRect(ninja.x + 12, ninja.y + 20, 20, 16);
+
+            // Arms
+            ctx.fillRect(ninja.x + 8, ninja.y + 24, 4, 8);
+            ctx.fillRect(ninja.x + 32, ninja.y + 24, 4, 8);
+
+            // Legs (animated)
+            if (ninja.jumping) {
+                ctx.fillRect(ninja.x + 14, ninja.y + 36, 6, 11);
+                ctx.fillRect(ninja.x + 24, ninja.y + 36, 6, 11);
+            } else {
+                if (legOffset === 0) {
+                    ctx.fillRect(ninja.x + 14, ninja.y + 36, 6, 11);
+                    ctx.fillRect(ninja.x + 24, ninja.y + 38, 6, 9);
+                } else {
+                    ctx.fillRect(ninja.x + 14, ninja.y + 38, 6, 9);
+                    ctx.fillRect(ninja.x + 24, ninja.y + 36, 6, 11);
+                }
+            }
+
+            // Headband (red accent)
+            ctx.fillStyle = '#d32f2f';
+            ctx.fillRect(ninja.x + 14, ninja.y + 4, 16, 4);
+            ctx.fillRect(ninja.x + 30, ninja.y + 6, 8, 2);
+        }
+
+        // Draw dead ninja (eyes closed)
+        function drawDeadNinja() {
+            ctx.fillStyle = '#535353';
+
+            // Head
+            ctx.fillRect(ninja.x + 14, ninja.y + 4, 16, 16);
+
+            // Eyes (X marks)
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(ninja.x + 16, ninja.y + 8, 2, 2);
+            ctx.fillRect(ninja.x + 18, ninja.y + 10, 2, 2);
+            ctx.fillRect(ninja.x + 18, ninja.y + 8, 2, 2);
+            ctx.fillRect(ninja.x + 16, ninja.y + 10, 2, 2);
+
+            ctx.fillRect(ninja.x + 24, ninja.y + 8, 2, 2);
+            ctx.fillRect(ninja.x + 26, ninja.y + 10, 2, 2);
+            ctx.fillRect(ninja.x + 26, ninja.y + 8, 2, 2);
+            ctx.fillRect(ninja.x + 24, ninja.y + 10, 2, 2);
+
+            ctx.fillStyle = '#535353';
+
+            // Body
+            ctx.fillRect(ninja.x + 12, ninja.y + 20, 20, 16);
+
+            // Arms
+            ctx.fillRect(ninja.x + 8, ninja.y + 24, 4, 8);
+            ctx.fillRect(ninja.x + 32, ninja.y + 24, 4, 8);
+
+            // Legs
+            ctx.fillRect(ninja.x + 14, ninja.y + 36, 6, 11);
+            ctx.fillRect(ninja.x + 24, ninja.y + 36, 6, 11);
+
+            // Headband
+            ctx.fillStyle = '#d32f2f';
+            ctx.fillRect(ninja.x + 14, ninja.y + 4, 16, 4);
+            ctx.fillRect(ninja.x + 30, ninja.y + 6, 8, 2);
+        }
+
+        // Draw ground with pixel pattern
+        function drawGround() {
+            ctx.strokeStyle = '#535353';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height - 10);
+            ctx.lineTo(canvas.width, canvas.height - 10);
+            ctx.stroke();
+        }
+
+        // Draw clouds
+        function drawClouds() {
+            clouds.forEach(cloud => {
+                ctx.fillStyle = '#c4c4c4';
+                // Simple pixel cloud
+                ctx.fillRect(cloud.x, cloud.y, 8, 4);
+                ctx.fillRect(cloud.x + 4, cloud.y - 4, 8, 4);
+                ctx.fillRect(cloud.x + 8, cloud.y, 8, 4);
+            });
+        }
+
+        // Draw obstacles (ninja stars, kunai, and bamboo spikes)
+        function drawObstacles() {
+            obstacles.forEach(obstacle => {
+                ctx.fillStyle = '#535353';
+
+                if (obstacle.type === 'star') {
+                    // Ninja star (shuriken)
+                    const cx = obstacle.x + 20;
+                    const cy = obstacle.y + 20;
+                    const rotation = (frameCount * 0.1) % (Math.PI * 2);
+
+                    ctx.save();
+                    ctx.translate(cx, cy);
+                    ctx.rotate(rotation);
+
+                    // Draw 4-pointed star
+                    for (let i = 0; i < 4; i++) {
+                        ctx.save();
+                        ctx.rotate((Math.PI / 2) * i);
+                        ctx.fillRect(-2, -12, 4, 24);
+                        ctx.fillRect(-6, -6, 12, 12);
+                        ctx.restore();
+                    }
+
+                    ctx.restore();
+                } else if (obstacle.type === 'kunai') {
+                    // Kunai (ninja dagger)
+                    ctx.fillRect(obstacle.x + 8, obstacle.y + 15, 24, 3);
+                    ctx.fillRect(obstacle.x + 28, obstacle.y + 10, 8, 13);
+                    ctx.fillRect(obstacle.x, obstacle.y + 14, 12, 5);
+                    ctx.fillStyle = '#d32f2f';
+                    ctx.fillRect(obstacle.x + 2, obstacle.y + 18, 4, 8);
+                } else if (obstacle.type === 'bamboo') {
+                    // Bamboo spike
+                    ctx.fillStyle = '#7cb342';
+                    ctx.fillRect(obstacle.x + 4, obstacle.y, 8, 40);
+                    ctx.fillRect(obstacle.x, obstacle.y + 10, 16, 4);
+                    ctx.fillRect(obstacle.x, obstacle.y + 25, 16, 4);
+
+                    ctx.fillRect(obstacle.x + 20, obstacle.y + 10, 8, 30);
+                    ctx.fillRect(obstacle.x + 16, obstacle.y + 15, 16, 4);
+                    ctx.fillRect(obstacle.x + 16, obstacle.y + 30, 16, 4);
+                }
+            });
+        }
+
+        // Create obstacle
+        function createObstacle() {
+            const types = ['star', 'kunai', 'bamboo'];
+            const type = types[Math.floor(Math.random() * types.length)];
+
+            let obstacle = {
+                x: canvas.width,
+                type: type
+            };
+
+            if (type === 'star') {
+                obstacle.y = ninja.groundY + 20;
+                obstacle.width = 40;
+                obstacle.height = 40;
+            } else if (type === 'kunai') {
+                obstacle.y = ninja.groundY + 10;
+                obstacle.width = 40;
+                obstacle.height = 30;
+            } else if (type === 'bamboo') {
+                obstacle.y = ninja.groundY;
+                obstacle.width = 32;
+                obstacle.height = 40;
+            }
+
+            obstacles.push(obstacle);
+        }
+
+        // Create cloud
+        function createCloud() {
+            clouds.push({
+                x: canvas.width,
+                y: Math.random() * 80 + 20,
+                speed: 1 + Math.random() * 1.5
+            });
+        }
+
+        // Update game
+        function update() {
+            if (gameOver) return;
+
+            frameCount++;
+
+            // Update score
+            if (gameRunning) {
+                score++;
+                if (score % 100 === 0 && score > 0) {
+                    gameSpeed += 0.2;
+                }
+            }
+
+            // Ninja physics
+            if (ninja.jumping) {
+                ninja.velocityY += ninja.gravity;
+                ninja.y += ninja.velocityY;
+
+                if (ninja.y >= ninja.groundY) {
+                    ninja.y = ninja.groundY;
+                    ninja.jumping = false;
+                    ninja.velocityY = 0;
+                }
+            }
+
+            // Update obstacles
+            obstacleTimer++;
+            if (obstacleTimer > obstacleInterval) {
+                createObstacle();
+                obstacleTimer = 0;
+                obstacleInterval = 80 + Math.random() * 40;
+            }
+
+            obstacles.forEach((obstacle, index) => {
+                obstacle.x -= gameSpeed;
+
+                // Remove off-screen obstacles
+                if (obstacle.x + obstacle.width < 0) {
+                    obstacles.splice(index, 1);
+                }
+
+                // Collision detection
+                if (
+                    ninja.x < obstacle.x + obstacle.width - 8 &&
+                    ninja.x + ninja.width - 8 > obstacle.x &&
+                    ninja.y < obstacle.y + obstacle.height - 8 &&
+                    ninja.y + ninja.height - 8 > obstacle.y
+                ) {
+                    gameOver = true;
+                    if (score > highScore) {
+                        highScore = score;
+                    }
+                }
+            });
+
+            // Update clouds
+            cloudTimer++;
+            if (cloudTimer > 150) {
+                createCloud();
+                cloudTimer = 0;
+            }
+
+            clouds.forEach((cloud, index) => {
+                cloud.x -= cloud.speed;
+                if (cloud.x < -20) {
+                    clouds.splice(index, 1);
+                }
+            });
+        }
+
+        // Draw everything
+        function draw() {
+            // Clear canvas
+            ctx.fillStyle = '#f7f7f7';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw clouds
+            drawClouds();
+
+            // Draw ground
+            drawGround();
+
+            // Draw ninja
+            if (gameOver) {
+                drawDeadNinja();
+            } else {
+                drawNinja();
+            }
+
+            // Draw obstacles
+            drawObstacles();
+
+            // Draw score
+            const scoreText = 'HI ' + String(highScore).padStart(5, '0') + ' ' + String(Math.floor(score)).padStart(5, '0');
+            document.getElementById('score').textContent = scoreText;
+
+            // Game over text
+            if (gameOver) {
+                ctx.fillStyle = '#535353';
+                ctx.font = 'bold 24px Courier New';
+                ctx.textAlign = 'center';
+                ctx.fillText('G A M E  O V E R', canvas.width / 2, 50);
+                ctx.font = '16px Courier New';
+                ctx.fillText('Press SPACE to restart', canvas.width / 2, 75);
+            } else if (!gameRunning) {
+                ctx.fillStyle = '#535353';
+                ctx.font = '16px Courier New';
+                ctx.textAlign = 'center';
+                ctx.fillText('Press SPACE to start', canvas.width / 2, 50);
+            }
+        }
+
+        // Game loop
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Jump function
+        function jump() {
+            if (!ninja.jumping && !gameOver) {
+                if (!gameRunning) {
+                    gameRunning = true;
+                }
+                ninja.jumping = true;
+                ninja.velocityY = ninja.jumpPower;
+            }
+        }
+
+        // Reset game
+        function resetGame() {
+            gameOver = false;
+            gameRunning = false;
+            score = 0;
+            frameCount = 0;
+            gameSpeed = 6;
+            obstacles = [];
+            clouds = [];
+            obstacleTimer = 0;
+            cloudTimer = 0;
+            ninja.y = ninja.groundY;
+            ninja.jumping = false;
+            ninja.velocityY = 0;
+        }
+
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' || e.code === 'ArrowUp') {
+                e.preventDefault();
+                if (gameOver) {
+                    resetGame();
+                } else {
+                    jump();
+                }
+            }
+        });
+
+        // Touch controls for mobile
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (gameOver) {
+                resetGame();
+            } else {
+                jump();
+            }
+        });
+
+        // Start game loop
+        gameLoop();
+    </script>
+</body>
+</html>

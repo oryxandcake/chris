@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chris </title>
+    <script>
+        // Set theme immediately before page renders to prevent flash
+        (function() {
+            const theme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <a href="index.html" class="active">About</a>
+            <a href="projects.html">Projects</a>
+            <button id="theme-toggle" aria-label="Toggle theme">◐</button>
+        </nav>
+    </header>
+
+    <main>
+        <h1>Hi!</h1>
+
+        <div class="about-container">
+          
+
+            <section class="about-content">
+                <p>
+                    I'm Chris. Welcome to my site where I keep the things I've made for my use, maybe they'll be useful to you.
+                </p>
+
+      
+                <p>
+                
+                </p>
+            </section>
+        </div>
+    </main>
+ <script src="theme.js"></script>
+    <footer>
+    </footer>
+
+  
+</body>
+</html>

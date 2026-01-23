@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grand Hyatt Defense - Room Service Rampage</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #1a1a2e;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+        }
+        #gameContainer {
+            text-align: center;
+        }
+        canvas {
+            border: 4px solid #c19a6b;
+            background: #2a2a3e;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+        #ui {
+            color: #c19a6b;
+            font-size: 24px;
+            margin-top: 20px;
+            text-shadow: 2px 2px 4px #000;
+        }
+        #gameOver {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 40px;
+            border: 4px solid #c19a6b;
+            color: #c19a6b;
+            font-size: 32px;
+            text-align: center;
+        }
+        #gameOver button {
+            margin-top: 20px;
+            padding: 15px 30px;
+            font-size: 20px;
+            background: #c19a6b;
+            border: none;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+        }
+        #gameOver button:hover {
+            background: #d4af37;
+        }
+        #instructions {
+            color: #888;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <div id="ui">
+            <div>Score: <span id="score">0</span> | Health: <span id="health">100</span>% | Wave: <span id="wave">1</span></div>
+            <div id="instructions">WASD to move | Mouse to aim | Click to politely decline</div>
+        </div>
+        <div id="gameOver">
+            <div id="gameOverText">YOU'VE BEEN ROOM SERVICED!</div>
+            <div style="font-size: 20px; margin-top: 20px;">Final Score: <span id="finalScore">0</span></div>
+            <button onclick="restartGame()">Try Again</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Game state
+        let gameRunning = true;
+        let score = 0;
+        let health = 100;
+        let wave = 1;
+        let mouseX = canvas.width / 2;
+        let mouseY = canvas.height / 2;
+
+        // Player
+        const player = {
+            x: canvas.width / 2,
+            y: canvas.height - 100,
+            size: 20,
+            speed: 4,
+            velX: 0,
+            velY: 0
+        };
+
+        // Input
+        const keys = {};
+
+        // Arrays
+        const bullets = [];
+        const trolleys = [];
+        const particles = [];
+
+        // Timing
+        let lastSpawn = 0;
+        let spawnRate = 2000;
+
+        // Event listeners
+        window.addEventListener('keydown', (e) => {
+            keys[e.key.toLowerCase()] = true;
+            // Prevent default browser behavior for game keys
+            if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(e.key.toLowerCase())) {
+                e.preventDefault();
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            keys[e.key.toLowerCase()] = false;
+            if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(e.key.toLowerCase())) {
+                e.preventDefault();
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+            mouseY = e.clientY - rect.top;
+        });
+
+        canvas.addEventListener('click', () => {
+            if (gameRunning) {
+                shoot();
+            }
+        });
+
+        // Shoot bullet
+        function shoot() {
+            const angle = Math.atan2(mouseY - player.y, mouseX - player.x);
+            bullets.push({
+                x: player.x,
+                y: player.y,
+                vx: Math.cos(angle) * 8,
+                vy: Math.sin(angle) * 8,
+                size: 4
+            });
+        }
+
+        // Spawn trolley
+        function spawnTrolley() {
+            const side = Math.random();
+            let x, y, vx, vy;
+
+            if (side < 0.25) { // Top
+                x = Math.random() * canvas.width;
+                y = -30;
+                vx = (Math.random() - 0.5) * 2;
+                vy = 1 + Math.random() * 1.5;
+            } else if (side < 0.5) { // Bottom
+                x = Math.random() * canvas.width;
+                y = canvas.height + 30;
+                vx = (Math.random() - 0.5) * 2;
+                vy = -(1 + Math.random() * 1.5);
+            } else if (side < 0.75) { // Left
+                x = -30;
+                y = Math.random() * canvas.height;
+                vx = 1 + Math.random() * 1.5;
+                vy = (Math.random() - 0.5) * 2;
+            } else { // Right
+                x = canvas.width + 30;
+                y = Math.random() * canvas.height;
+                vx = -(1 + Math.random() * 1.5);
+                vy = (Math.random() - 0.5) * 2;
+            }
+
+            // Adjust velocity toward player
+            const angleToPlayer = Math.atan2(player.y - y, player.x - x);
+            const speed = 1 + wave * 0.2;
+            vx = Math.cos(angleToPlayer) * speed;
+            vy = Math.sin(angleToPlayer) * speed;
+
+            trolleys.push({
+                x: x,
+                y: y,
+                vx: vx,
+                vy: vy,
+                size: 25,
+                health: 3 + Math.floor(wave / 2)
+            });
+        }
+
+        // Create particles
+        function createParticles(x, y, color) {
+            for (let i = 0; i < 8; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 6,
+                    vy: (Math.random() - 0.5) * 6,
+                    life: 30,
+                    color: color
+                });
+            }
+        }
+
+        // Draw pixel art player
+        function drawPlayer() {
+            ctx.save();
+
+            // Draw body (blue suit)
+            ctx.fillStyle = '#2a52be';
+            ctx.fillRect(player.x - 8, player.y - 8, 16, 16);
+
+            // Draw head (skin tone)
+            ctx.fillStyle = '#ffdbac';
+            ctx.fillRect(player.x - 6, player.y - 14, 12, 8);
+
+            // Draw eyes
+            ctx.fillStyle = '#000';
+            ctx.fillRect(player.x - 4, player.y - 12, 2, 2);
+            ctx.fillRect(player.x + 2, player.y - 12, 2, 2);
+
+            // Draw gun direction
+            const angle = Math.atan2(mouseY - player.y, mouseX - player.x);
+            const gunLength = 15;
+            ctx.strokeStyle = '#444';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(player.x, player.y);
+            ctx.lineTo(player.x + Math.cos(angle) * gunLength, player.y + Math.sin(angle) * gunLength);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // Draw trolley
+        function drawTrolley(trolley) {
+            ctx.save();
+
+            // Trolley base (gold/brass)
+            ctx.fillStyle = '#c19a6b';
+            ctx.fillRect(trolley.x - 20, trolley.y - 15, 40, 25);
+
+            // Wheels
+            ctx.fillStyle = '#333';
+            ctx.fillRect(trolley.x - 15, trolley.y + 8, 6, 4);
+            ctx.fillRect(trolley.x + 9, trolley.y + 8, 6, 4);
+
+            // Food cloche (silver)
+            ctx.fillStyle = '#c0c0c0';
+            ctx.fillRect(trolley.x - 10, trolley.y - 20, 20, 8);
+            ctx.fillRect(trolley.x - 6, trolley.y - 24, 12, 4);
+
+            // Fancy details (white cloth)
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(trolley.x - 18, trolley.y - 12, 36, 3);
+
+            // High calorie warning (red)
+            ctx.fillStyle = '#ff0000';
+            ctx.fillRect(trolley.x - 8, trolley.y - 8, 16, 4);
+
+            // Health bar
+            const healthPercent = trolley.health / (3 + Math.floor(wave / 2));
+            ctx.fillStyle = '#00ff00';
+            ctx.fillRect(trolley.x - 20, trolley.y - 30, 40 * healthPercent, 3);
+
+            ctx.restore();
+        }
+
+        // Draw bullet (polite decline messages)
+        function drawBullet(bullet) {
+            ctx.save();
+
+            // Draw "NO THANKS" text effect
+            ctx.fillStyle = '#ff69b4';
+            ctx.fillRect(bullet.x - 6, bullet.y - 2, 12, 4);
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(bullet.x - 4, bullet.y - 1, 8, 2);
+
+            ctx.restore();
+        }
+
+        // Draw background (hotel corridor)
+        function drawBackground() {
+            // Floor tiles
+            ctx.fillStyle = '#8b7355';
+            for (let x = 0; x < canvas.width; x += 40) {
+                for (let y = 0; y < canvas.height; y += 40) {
+                    ctx.fillRect(x, y, 38, 38);
+                }
+            }
+
+            // Wall panels
+            ctx.fillStyle = '#4a4a4a';
+            for (let y = 0; y < canvas.height; y += 60) {
+                ctx.fillRect(0, y, 20, 55);
+                ctx.fillRect(canvas.width - 20, y, 20, 55);
+            }
+
+            // Gold trim
+            ctx.fillStyle = '#c19a6b';
+            ctx.fillRect(20, 0, 5, canvas.height);
+            ctx.fillRect(canvas.width - 25, 0, 5, canvas.height);
+        }
+
+        // Update game
+        function update(timestamp) {
+            if (!gameRunning) return;
+
+            // Player movement
+            player.velX = 0;
+            player.velY = 0;
+
+            if (keys['w'] || keys['arrowup']) player.velY = -player.speed;
+            if (keys['s'] || keys['arrowdown']) player.velY = player.speed;
+            if (keys['a'] || keys['arrowleft']) player.velX = -player.speed;
+            if (keys['d'] || keys['arrowright']) player.velX = player.speed;
+
+            // Normalize diagonal movement
+            if (player.velX !== 0 && player.velY !== 0) {
+                player.velX *= 0.707;
+                player.velY *= 0.707;
+            }
+
+            player.x += player.velX;
+            player.y += player.velY;
+
+            // Keep player in bounds
+            player.x = Math.max(30, Math.min(canvas.width - 30, player.x));
+            player.y = Math.max(30, Math.min(canvas.height - 30, player.y));
+
+            // Update bullets
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                bullets[i].x += bullets[i].vx;
+                bullets[i].y += bullets[i].vy;
+
+                // Remove off-screen bullets
+                if (bullets[i].x < 0 || bullets[i].x > canvas.width ||
+                    bullets[i].y < 0 || bullets[i].y > canvas.height) {
+                    bullets.splice(i, 1);
+                }
+            }
+
+            // Update trolleys
+            for (let i = trolleys.length - 1; i >= 0; i--) {
+                // Move toward player
+                const angleToPlayer = Math.atan2(player.y - trolleys[i].y, player.x - trolleys[i].x);
+                const speed = 1 + wave * 0.15;
+                trolleys[i].x += Math.cos(angleToPlayer) * speed;
+                trolleys[i].y += Math.sin(angleToPlayer) * speed;
+
+                // Check collision with player
+                const dx = trolleys[i].x - player.x;
+                const dy = trolleys[i].y - player.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist < 30) {
+                    health -= 20;
+                    createParticles(trolleys[i].x, trolleys[i].y, '#ff0000');
+                    trolleys.splice(i, 1);
+
+                    if (health <= 0) {
+                        gameOver();
+                    }
+                    continue;
+                }
+
+                // Check collision with bullets
+                for (let j = bullets.length - 1; j >= 0; j--) {
+                    const bdx = bullets[j].x - trolleys[i].x;
+                    const bdy = bullets[j].y - trolleys[i].y;
+                    const bdist = Math.sqrt(bdx * bdx + bdy * bdy);
+
+                    if (bdist < 25) {
+                        trolleys[i].health--;
+                        bullets.splice(j, 1);
+                        createParticles(trolleys[i].x, trolleys[i].y, '#c19a6b');
+
+                        if (trolleys[i].health <= 0) {
+                            score += 100 * wave;
+                            createParticles(trolleys[i].x, trolleys[i].y, '#00ff00');
+                            trolleys.splice(i, 1);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Update particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].x += particles[i].vx;
+                particles[i].y += particles[i].vy;
+                particles[i].life--;
+
+                if (particles[i].life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+
+            // Spawn trolleys
+            if (timestamp - lastSpawn > spawnRate) {
+                spawnTrolley();
+                lastSpawn = timestamp;
+            }
+
+            // Wave progression
+            if (score > wave * 1000) {
+                wave++;
+                spawnRate = Math.max(500, spawnRate - 100);
+            }
+
+            // Update UI
+            document.getElementById('score').textContent = score;
+            document.getElementById('health').textContent = health;
+            document.getElementById('wave').textContent = wave;
+        }
+
+        // Draw game
+        function draw() {
+            drawBackground();
+
+            // Draw particles
+            particles.forEach(p => {
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life / 30;
+                ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
+                ctx.globalAlpha = 1;
+            });
+
+            // Draw trolleys
+            trolleys.forEach(drawTrolley);
+
+            // Draw bullets
+            bullets.forEach(drawBullet);
+
+            // Draw player
+            drawPlayer();
+
+            // Draw crosshair
+            ctx.strokeStyle = '#ff0000';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(mouseX - 10, mouseY);
+            ctx.lineTo(mouseX + 10, mouseY);
+            ctx.moveTo(mouseX, mouseY - 10);
+            ctx.lineTo(mouseX, mouseY + 10);
+            ctx.stroke();
+        }
+
+        // Game loop
+        function gameLoop(timestamp) {
+            update(timestamp);
+            draw();
+
+            if (gameRunning) {
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        // Game over
+        function gameOver() {
+            gameRunning = false;
+            document.getElementById('gameOver').style.display = 'block';
+            document.getElementById('finalScore').textContent = score;
+        }
+
+        // Restart game
+        function restartGame() {
+            gameRunning = true;
+            score = 0;
+            health = 100;
+            wave = 1;
+            player.x = canvas.width / 2;
+            player.y = canvas.height - 100;
+            bullets.length = 0;
+            trolleys.length = 0;
+            particles.length = 0;
+            lastSpawn = 0;
+            spawnRate = 2000;
+            document.getElementById('gameOver').style.display = 'none';
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Start game
+        requestAnimationFrame(gameLoop);
+    </script>
+</body>
+</html>

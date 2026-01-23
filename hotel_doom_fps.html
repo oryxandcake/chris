@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grand Hyatt Defense FPS - Room Service Rampage</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #000;
+            font-family: 'Courier New', monospace;
+        }
+        #gameCanvas {
+            display: block;
+            margin: 0 auto;
+            cursor: none;
+            image-rendering: auto;
+        }
+        #ui {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #c19a6b;
+            font-size: 28px;
+            text-shadow: 3px 3px 6px #000;
+            text-align: center;
+            pointer-events: none;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px 30px;
+            border: 2px solid #c19a6b;
+        }
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 30px;
+            height: 30px;
+            pointer-events: none;
+        }
+        #crosshair::before, #crosshair::after {
+            content: '';
+            position: absolute;
+            background: rgba(255, 0, 0, 0.8);
+            box-shadow: 0 0 10px #ff0000;
+        }
+        #crosshair::before {
+            left: 50%;
+            top: 20%;
+            width: 3px;
+            height: 60%;
+            transform: translateX(-50%);
+        }
+        #crosshair::after {
+            top: 50%;
+            left: 20%;
+            height: 3px;
+            width: 60%;
+            transform: translateY(-50%);
+        }
+        #gameOver {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            padding: 50px;
+            border: 5px solid #c19a6b;
+            color: #c19a6b;
+            font-size: 36px;
+            text-align: center;
+            z-index: 100;
+            box-shadow: 0 0 50px rgba(193, 154, 107, 0.5);
+        }
+        #gameOver button {
+            margin-top: 25px;
+            padding: 20px 40px;
+            font-size: 24px;
+            background: #c19a6b;
+            border: none;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+        }
+        #gameOver button:hover {
+            background: #d4af37;
+        }
+        #instructions {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #888;
+            font-size: 18px;
+            text-align: center;
+            text-shadow: 2px 2px 4px #000;
+            pointer-events: none;
+        }
+        #startScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #c19a6b;
+            font-size: 24px;
+            z-index: 200;
+        }
+        #startScreen h1 {
+            font-size: 56px;
+            margin-bottom: 30px;
+            text-shadow: 4px 4px 8px #000;
+        }
+        #startScreen button {
+            margin-top: 20px;
+            padding: 20px 40px;
+            font-size: 24px;
+            background: #c19a6b;
+            border: none;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+        }
+        #minimap {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 200px;
+            height: 200px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #c19a6b;
+        }
+    </style>
+</head>
+<body>
+    <div id="startScreen">
+        <h1>GRAND HYATT DEFENSE</h1>
+        <p>Room Service Rampage</p>
+        <button onclick="startGame()">CLICK TO START</button>
+        <p style="margin-top: 30px; font-size: 18px;">WASD or Arrow Keys to move | Mouse to aim | Click or Space to fire</p>
+    </div>
+    <canvas id="gameCanvas" width="1280" height="720"></canvas>
+    <canvas id="minimap"></canvas>
+    <div id="crosshair"></div>
+    <div id="ui">
+        <div>HEALTH: <span id="health">100</span> | AMMO: ∞ | SCORE: <span id="score">0</span> | WAVE: <span id="wave">1</span></div>
+    </div>
+    <div id="instructions">
+        ESC to unlock mouse | Kill the room service trolleys before they force-feed you!
+    </div>
+    <div id="gameOver">
+        <div id="gameOverText">YOU'VE BEEN ROOM SERVICED!</div>
+        <div style="font-size: 24px; margin-top: 25px;">Final Score: <span id="finalScore">0</span></div>
+        <button onclick="restartGame()">Try Again</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const minimapCanvas = document.getElementById('minimap');
+        const minimapCtx = minimapCanvas.getContext('2d');
+        minimapCanvas.width = 200;
+        minimapCanvas.height = 200;
+
+        // Game constants
+        const MAP_SIZE = 24;
+        const TILE_SIZE = 64;
+        const FOV = Math.PI / 3;
+        const NUM_RAYS = 640; // Higher resolution
+        const MAX_DEPTH = 30;
+
+        // Game state
+        let gameRunning = false;
+        let pointerLocked = false;
+        let score = 0;
+        let health = 100;
+        let wave = 1;
+        let animFrame = 0;
+
+        // Player
+        const player = {
+            x: MAP_SIZE * TILE_SIZE / 2,
+            y: MAP_SIZE * TILE_SIZE / 2,
+            angle: 0,
+            speed: 3.5,
+            rotSpeed: 0.003
+        };
+
+        // Input
+        const keys = {};
+        let mouseDeltaX = 0;
+
+        // Map generation (1 = marble wall, 2 = wallpaper, 3 = gold pillar, 0 = empty)
+        const map = [];
+        for (let y = 0; y < MAP_SIZE; y++) {
+            map[y] = [];
+            for (let x = 0; x < MAP_SIZE; x++) {
+                // Create interesting hotel layout
+                if (x === 0 || x === MAP_SIZE - 1 || y === 0 || y === MAP_SIZE - 1) {
+                    map[y][x] = 1; // Outer marble walls
+                } else if ((x === 5 || x === 18) && y > 2 && y < MAP_SIZE - 3) {
+                    map[y][x] = 2; // Wallpaper columns
+                } else if ((y === 5 || y === 18) && x > 2 && x < MAP_SIZE - 3) {
+                    map[y][x] = 2;
+                } else if ((x === 8 || x === 15) && (y === 8 || y === 15)) {
+                    map[y][x] = 3; // Gold pillars
+                } else if (Math.random() < 0.05 && x > 3 && x < MAP_SIZE - 4 && y > 3 && y < MAP_SIZE - 4) {
+                    map[y][x] = Math.random() > 0.5 ? 2 : 3; // Random decorations
+                } else {
+                    map[y][x] = 0;
+                }
+            }
+        }
+
+        // Enemies (trolleys)
+        const enemies = [];
+
+        // Bullets with visible projectiles
+        const bullets = [];
+
+        // Particle effects
+        const particles = [];
+
+        // Weapon
+        const weapon = {
+            shooting: false,
+            shootTimer: 0,
+            recoil: 0,
+            bobAngle: 0
+        };
+
+        // Textures (procedurally generated)
+        const textures = {};
+
+        function generateTextures() {
+            const texSize = 64;
+
+            // Marble wall texture
+            textures.marble = document.createElement('canvas');
+            textures.marble.width = texSize;
+            textures.marble.height = texSize;
+            const marbleCtx = textures.marble.getContext('2d');
+            marbleCtx.fillStyle = '#e8e8e8';
+            marbleCtx.fillRect(0, 0, texSize, texSize);
+            for (let i = 0; i < 50; i++) {
+                marbleCtx.fillStyle = `rgba(200, 200, 200, ${Math.random() * 0.3})`;
+                marbleCtx.fillRect(Math.random() * texSize, 0, 2, texSize);
+            }
+            for (let i = 0; i < 20; i++) {
+                marbleCtx.fillStyle = `rgba(180, 180, 180, ${Math.random() * 0.2})`;
+                marbleCtx.beginPath();
+                marbleCtx.arc(Math.random() * texSize, Math.random() * texSize, Math.random() * 5, 0, Math.PI * 2);
+                marbleCtx.fill();
+            }
+
+            // Wallpaper texture
+            textures.wallpaper = document.createElement('canvas');
+            textures.wallpaper.width = texSize;
+            textures.wallpaper.height = texSize;
+            const wallpaperCtx = textures.wallpaper.getContext('2d');
+            wallpaperCtx.fillStyle = '#8b4513';
+            wallpaperCtx.fillRect(0, 0, texSize, texSize);
+            // Damask pattern
+            for (let y = 0; y < texSize; y += 16) {
+                for (let x = 0; x < texSize; x += 16) {
+                    wallpaperCtx.fillStyle = '#a0522d';
+                    wallpaperCtx.fillRect(x + 4, y + 4, 8, 8);
+                }
+            }
+            // Vertical stripes
+            for (let x = 0; x < texSize; x += 8) {
+                wallpaperCtx.fillStyle = 'rgba(139, 90, 43, 0.3)';
+                wallpaperCtx.fillRect(x, 0, 2, texSize);
+            }
+
+            // Gold pillar texture
+            textures.gold = document.createElement('canvas');
+            textures.gold.width = texSize;
+            textures.gold.height = texSize;
+            const goldCtx = textures.gold.getContext('2d');
+            const goldGradient = goldCtx.createLinearGradient(0, 0, texSize, 0);
+            goldGradient.addColorStop(0, '#b8860b');
+            goldGradient.addColorStop(0.5, '#ffd700');
+            goldGradient.addColorStop(1, '#b8860b');
+            goldCtx.fillStyle = goldGradient;
+            goldCtx.fillRect(0, 0, texSize, texSize);
+            // Vertical fluting
+            for (let x = 0; x < texSize; x += 8) {
+                goldCtx.fillStyle = 'rgba(218, 165, 32, 0.5)';
+                goldCtx.fillRect(x, 0, 3, texSize);
+            }
+        }
+
+        generateTextures();
+
+        // Event listeners
+        window.addEventListener('keydown', (e) => {
+            keys[e.key.toLowerCase()] = true;
+            if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(e.key.toLowerCase())) {
+                e.preventDefault();
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            keys[e.key.toLowerCase()] = false;
+            if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(e.key.toLowerCase())) {
+                e.preventDefault();
+            }
+        });
+
+        canvas.addEventListener('click', () => {
+            if (!pointerLocked && gameRunning) {
+                canvas.requestPointerLock();
+            }
+            if (pointerLocked && gameRunning) {
+                shoot();
+            }
+        });
+
+        document.addEventListener('pointerlockchange', () => {
+            pointerLocked = document.pointerLockElement === canvas;
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (pointerLocked) {
+                mouseDeltaX = e.movementX;
+            }
+        });
+
+        // Spawn enemy
+        function spawnEnemy() {
+            let x, y;
+            let attempts = 0;
+            do {
+                x = (Math.random() * (MAP_SIZE - 4) + 2) * TILE_SIZE;
+                y = (Math.random() * (MAP_SIZE - 4) + 2) * TILE_SIZE;
+                attempts++;
+            } while (getMapCell(x, y) !== 0 && attempts < 50);
+
+            const distToPlayer = Math.sqrt((x - player.x) ** 2 + (y - player.y) ** 2);
+            if (distToPlayer > 300) {
+                enemies.push({
+                    x: x,
+                    y: y,
+                    health: 3 + Math.floor(wave / 2),
+                    maxHealth: 3 + Math.floor(wave / 2),
+                    speed: 1.8 + wave * 0.1,
+                    size: 32,
+                    animFrame: Math.random() * Math.PI * 2
+                });
+            }
+        }
+
+        // Shoot
+        function shoot() {
+            if (weapon.shootTimer <= 0) {
+                weapon.shooting = true;
+                weapon.shootTimer = 20;
+                weapon.recoil = 15;
+
+                bullets.push({
+                    x: player.x,
+                    y: player.y,
+                    angle: player.angle,
+                    speed: 20,
+                    life: 80,
+                    trail: []
+                });
+            }
+        }
+
+        // Get map cell
+        function getMapCell(x, y) {
+            const mapX = Math.floor(x / TILE_SIZE);
+            const mapY = Math.floor(y / TILE_SIZE);
+            if (mapX < 0 || mapX >= MAP_SIZE || mapY < 0 || mapY >= MAP_SIZE) {
+                return 1;
+            }
+            return map[mapY][mapX];
+        }
+
+        // Enhanced raycasting with texture mapping
+        function castRay(angle) {
+            const rayDirX = Math.cos(angle);
+            const rayDirY = Math.sin(angle);
+
+            let distance = 0;
+            let hit = false;
+            let wallType = 0;
+            let hitX, hitY;
+            let side = 0; // 0 = vertical, 1 = horizontal
+
+            while (!hit && distance < MAX_DEPTH * TILE_SIZE) {
+                distance += 2;
+                const testX = player.x + rayDirX * distance;
+                const testY = player.y + rayDirY * distance;
+
+                const cellValue = getMapCell(testX, testY);
+                if (cellValue !== 0) {
+                    hit = true;
+                    wallType = cellValue;
+                    hitX = testX;
+                    hitY = testY;
+
+                    // Determine which side was hit
+                    const prevX = player.x + rayDirX * (distance - 2);
+                    const prevY = player.y + rayDirY * (distance - 2);
+                    if (Math.floor(testX / TILE_SIZE) !== Math.floor(prevX / TILE_SIZE)) {
+                        side = 0;
+                    } else {
+                        side = 1;
+                    }
+                }
+            }
+
+            return { distance, hit, wallType, hitX, hitY, side };
+        }
+
+        // Create particles
+        function createParticles(x, y, color, count = 10) {
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 8,
+                    vy: (Math.random() - 0.5) * 8,
+                    life: 30 + Math.random() * 20,
+                    maxLife: 30 + Math.random() * 20,
+                    color: color,
+                    size: 2 + Math.random() * 3
+                });
+            }
+        }
+
+        // Update game
+        function update() {
+            if (!gameRunning) return;
+
+            animFrame++;
+
+            // Player rotation
+            player.angle += mouseDeltaX * player.rotSpeed;
+            mouseDeltaX = 0;
+
+            if (keys['arrowleft']) player.angle -= 0.05;
+            if (keys['arrowright']) player.angle += 0.05;
+
+            // Spacebar to shoot
+            if (keys[' ']) {
+                shoot();
+            }
+
+            // Player movement with bobbing
+            let moveX = 0;
+            let moveY = 0;
+            let moving = false;
+
+            if (keys['w'] || keys['arrowup']) {
+                moveX += Math.cos(player.angle) * player.speed;
+                moveY += Math.sin(player.angle) * player.speed;
+                moving = true;
+            }
+            if (keys['s'] || keys['arrowdown']) {
+                moveX -= Math.cos(player.angle) * player.speed;
+                moveY -= Math.sin(player.angle) * player.speed;
+                moving = true;
+            }
+            if (keys['a']) {
+                moveX += Math.cos(player.angle - Math.PI / 2) * player.speed;
+                moveY += Math.sin(player.angle - Math.PI / 2) * player.speed;
+                moving = true;
+            }
+            if (keys['d']) {
+                moveX += Math.cos(player.angle + Math.PI / 2) * player.speed;
+                moveY += Math.sin(player.angle + Math.PI / 2) * player.speed;
+                moving = true;
+            }
+
+            if (moving) {
+                weapon.bobAngle += 0.2;
+            } else {
+                weapon.bobAngle *= 0.95;
+            }
+
+            // Collision detection
+            const newX = player.x + moveX;
+            const newY = player.y + moveY;
+
+            if (getMapCell(newX, player.y) === 0) {
+                player.x = newX;
+            }
+            if (getMapCell(player.x, newY) === 0) {
+                player.y = newY;
+            }
+
+            // Update bullets
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                bullets[i].trail.push({ x: bullets[i].x, y: bullets[i].y });
+                if (bullets[i].trail.length > 8) bullets[i].trail.shift();
+
+                bullets[i].x += Math.cos(bullets[i].angle) * bullets[i].speed;
+                bullets[i].y += Math.sin(bullets[i].angle) * bullets[i].speed;
+                bullets[i].life--;
+
+                // Check wall collision
+                if (getMapCell(bullets[i].x, bullets[i].y) !== 0 || bullets[i].life <= 0) {
+                    createParticles(bullets[i].x, bullets[i].y, '#ffff00', 5);
+                    bullets.splice(i, 1);
+                    continue;
+                }
+
+                // Check enemy collision
+                for (let j = enemies.length - 1; j >= 0; j--) {
+                    const dx = bullets[i].x - enemies[j].x;
+                    const dy = bullets[i].y - enemies[j].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < enemies[j].size) {
+                        enemies[j].health--;
+                        createParticles(bullets[i].x, bullets[i].y, '#ff0000', 8);
+                        bullets.splice(i, 1);
+
+                        if (enemies[j].health <= 0) {
+                            score += 100 * wave;
+                            createParticles(enemies[j].x, enemies[j].y, '#00ff00', 15);
+                            enemies.splice(j, 1);
+                        }
+                        break;
+                    }
+                }
+            }
+
+            // Update particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].x += particles[i].vx;
+                particles[i].y += particles[i].vy;
+                particles[i].vx *= 0.95;
+                particles[i].vy *= 0.95;
+                particles[i].life--;
+
+                if (particles[i].life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+
+            // Update enemies
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                enemies[i].animFrame += 0.1;
+
+                const angleToPlayer = Math.atan2(player.y - enemies[i].y, player.x - enemies[i].x);
+                const moveX = Math.cos(angleToPlayer) * enemies[i].speed;
+                const moveY = Math.sin(angleToPlayer) * enemies[i].speed;
+
+                const newX = enemies[i].x + moveX;
+                const newY = enemies[i].y + moveY;
+
+                if (getMapCell(newX, enemies[i].y) === 0) {
+                    enemies[i].x = newX;
+                }
+                if (getMapCell(enemies[i].x, newY) === 0) {
+                    enemies[i].y = newY;
+                }
+
+                // Check player collision
+                const dx = player.x - enemies[i].x;
+                const dy = player.y - enemies[i].y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist < 50) {
+                    health -= 1;
+                    createParticles(player.x, player.y, '#ff0000', 3);
+                    if (health <= 0) {
+                        gameOver();
+                    }
+                }
+            }
+
+            // Weapon timers
+            if (weapon.shootTimer > 0) weapon.shootTimer--;
+            if (weapon.recoil > 0) weapon.recoil -= 1.5;
+
+            // Spawn enemies
+            const spawnChance = 0.008 + wave * 0.003;
+            const maxEnemies = 12 + wave * 3;
+            if (Math.random() < spawnChance && enemies.length < maxEnemies) {
+                spawnEnemy();
+            }
+
+            // Wave progression
+            if (score > wave * 1000) {
+                wave++;
+            }
+
+            // Update UI
+            document.getElementById('score').textContent = score;
+            document.getElementById('health').textContent = Math.max(0, health);
+            document.getElementById('wave').textContent = wave;
+        }
+
+        // Render 3D view with textures
+        function render3D() {
+            // Draw ceiling with gradient
+            const ceilingGradient = ctx.createLinearGradient(0, 0, 0, canvas.height / 2);
+            ceilingGradient.addColorStop(0, '#2a2a2a');
+            ceilingGradient.addColorStop(1, '#4a4a4a');
+            ctx.fillStyle = ceilingGradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height / 2);
+
+            // Draw floor with perspective
+            const floorGradient = ctx.createLinearGradient(0, canvas.height / 2, 0, canvas.height);
+            floorGradient.addColorStop(0, '#6b4423');
+            floorGradient.addColorStop(1, '#3a2410');
+            ctx.fillStyle = floorGradient;
+            ctx.fillRect(0, canvas.height / 2, canvas.width, canvas.height / 2);
+
+            // Cast rays for walls
+            const rayAngleStep = FOV / NUM_RAYS;
+            const zbuffer = new Array(NUM_RAYS);
+
+            for (let i = 0; i < NUM_RAYS; i++) {
+                const rayAngle = player.angle - FOV / 2 + rayAngleStep * i;
+                const ray = castRay(rayAngle);
+                zbuffer[i] = ray.distance;
+
+                if (ray.hit) {
+                    // Fix fish-eye effect
+                    const correctedDistance = ray.distance * Math.cos(rayAngle - player.angle);
+                    const wallHeight = (TILE_SIZE * 450) / correctedDistance;
+
+                    const x = (i / NUM_RAYS) * canvas.width;
+                    const wallTop = (canvas.height - wallHeight) / 2;
+
+                    // Get texture based on wall type
+                    let texture;
+                    if (ray.wallType === 1) texture = textures.marble;
+                    else if (ray.wallType === 2) texture = textures.wallpaper;
+                    else texture = textures.gold;
+
+                    // Calculate texture coordinate
+                    const textureX = ray.side === 0 ?
+                        (ray.hitY % TILE_SIZE) : (ray.hitX % TILE_SIZE);
+
+                    // Darken based on distance and side
+                    const brightness = Math.max(0.2, 1 - (correctedDistance / (MAX_DEPTH * TILE_SIZE)));
+                    const sideDarken = ray.side === 0 ? 1 : 0.75;
+
+                    ctx.save();
+                    ctx.globalAlpha = brightness * sideDarken;
+                    ctx.drawImage(
+                        texture,
+                        textureX, 0, 1, texture.height,
+                        x, wallTop, canvas.width / NUM_RAYS + 1, wallHeight
+                    );
+                    ctx.restore();
+                }
+            }
+
+            // Draw bullet projectiles in 3D
+            bullets.forEach(bullet => {
+                const dx = bullet.x - player.x;
+                const dy = bullet.y - player.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const angleToProjectile = Math.atan2(dy, dx);
+                let angleDiff = angleToProjectile - player.angle;
+
+                while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+                while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+
+                if (Math.abs(angleDiff) < FOV / 2 + 0.5 && distance < MAX_DEPTH * TILE_SIZE) {
+                    const rayIndex = Math.floor(((angleDiff / FOV) + 0.5) * NUM_RAYS);
+                    if (rayIndex >= 0 && rayIndex < NUM_RAYS && distance < zbuffer[rayIndex]) {
+                        const size = 3000 / distance;
+                        const screenX = (angleDiff / FOV + 0.5) * canvas.width;
+                        const screenY = canvas.height / 2;
+
+                        // Draw glowing projectile
+                        const brightness = Math.max(0.3, 1 - (distance / (MAX_DEPTH * TILE_SIZE)));
+
+                        ctx.shadowBlur = 20;
+                        ctx.shadowColor = '#ffff00';
+                        ctx.fillStyle = `rgba(255, 255, 0, ${brightness})`;
+                        ctx.beginPath();
+                        ctx.arc(screenX, screenY, size, 0, Math.PI * 2);
+                        ctx.fill();
+
+                        ctx.fillStyle = `rgba(255, 100, 100, ${brightness * 0.8})`;
+                        ctx.beginPath();
+                        ctx.arc(screenX, screenY, size * 0.5, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.shadowBlur = 0;
+                    }
+                }
+            });
+
+            // Draw enemies (sprites)
+            const sortedEnemies = enemies.slice().sort((a, b) => {
+                const distA = Math.sqrt((a.x - player.x) ** 2 + (a.y - player.y) ** 2);
+                const distB = Math.sqrt((b.x - player.x) ** 2 + (b.y - player.y) ** 2);
+                return distB - distA;
+            });
+
+            sortedEnemies.forEach(enemy => {
+                const dx = enemy.x - player.x;
+                const dy = enemy.y - player.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const angleToEnemy = Math.atan2(dy, dx);
+                let angleDiff = angleToEnemy - player.angle;
+
+                while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+                while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+
+                if (Math.abs(angleDiff) < FOV / 2 + 0.5) {
+                    const rayIndex = Math.floor(((angleDiff / FOV) + 0.5) * NUM_RAYS);
+                    if (rayIndex >= 0 && rayIndex < NUM_RAYS && distance < zbuffer[rayIndex]) {
+                        const spriteHeight = (TILE_SIZE * 600) / distance;
+                        const spriteWidth = spriteHeight * 1;
+
+                        const screenX = (angleDiff / FOV + 0.5) * canvas.width;
+                        const screenY = (canvas.height - spriteHeight) / 2 + Math.sin(enemy.animFrame) * 10;
+
+                        const brightness = Math.max(0.3, 1 - (distance / (MAX_DEPTH * TILE_SIZE)));
+
+                        // Draw detailed trolley
+                        ctx.save();
+                        ctx.globalAlpha = brightness;
+
+                        // Wheels
+                        ctx.fillStyle = '#1a1a1a';
+                        ctx.fillRect(screenX - spriteWidth * 0.35, screenY + spriteHeight * 0.8, spriteWidth * 0.25, spriteHeight * 0.15);
+                        ctx.fillRect(screenX + spriteWidth * 0.1, screenY + spriteHeight * 0.8, spriteWidth * 0.25, spriteHeight * 0.15);
+
+                        // Cart base (brass)
+                        const cartGrad = ctx.createLinearGradient(screenX - spriteWidth/2, 0, screenX + spriteWidth/2, 0);
+                        cartGrad.addColorStop(0, '#8b7355');
+                        cartGrad.addColorStop(0.5, '#c19a6b');
+                        cartGrad.addColorStop(1, '#8b7355');
+                        ctx.fillStyle = cartGrad;
+                        ctx.fillRect(screenX - spriteWidth * 0.4, screenY + spriteHeight * 0.3, spriteWidth * 0.8, spriteHeight * 0.5);
+
+                        // White tablecloth
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(screenX - spriteWidth * 0.38, screenY + spriteHeight * 0.32, spriteWidth * 0.76, spriteHeight * 0.08);
+
+                        // Silver cloche (dome)
+                        const clocheGrad = ctx.createRadialGradient(screenX, screenY + spriteHeight * 0.2, 0, screenX, screenY + spriteHeight * 0.2, spriteWidth * 0.3);
+                        clocheGrad.addColorStop(0, '#e0e0e0');
+                        clocheGrad.addColorStop(1, '#a0a0a0');
+                        ctx.fillStyle = clocheGrad;
+                        ctx.beginPath();
+                        ctx.ellipse(screenX, screenY + spriteHeight * 0.25, spriteWidth * 0.3, spriteHeight * 0.25, 0, 0, Math.PI * 2);
+                        ctx.fill();
+
+                        // Cloche handle
+                        ctx.fillStyle = '#c0c0c0';
+                        ctx.fillRect(screenX - spriteWidth * 0.05, screenY + spriteHeight * 0.05, spriteWidth * 0.1, spriteHeight * 0.08);
+
+                        // HIGH CALORIE warning label
+                        ctx.fillStyle = '#ff0000';
+                        ctx.fillRect(screenX - spriteWidth * 0.25, screenY + spriteHeight * 0.45, spriteWidth * 0.5, spriteHeight * 0.12);
+                        ctx.fillStyle = '#ffffff';
+                        ctx.font = `bold ${spriteHeight * 0.08}px Arial`;
+                        ctx.textAlign = 'center';
+                        ctx.fillText('HIGH CAL', screenX, screenY + spriteHeight * 0.53);
+
+                        // Health bar
+                        const healthPercent = enemy.health / enemy.maxHealth;
+                        ctx.fillStyle = '#ff0000';
+                        ctx.fillRect(screenX - spriteWidth * 0.4, screenY - 20, spriteWidth * 0.8, 8);
+                        ctx.fillStyle = '#00ff00';
+                        ctx.fillRect(screenX - spriteWidth * 0.4, screenY - 20, spriteWidth * 0.8 * healthPercent, 8);
+
+                        ctx.restore();
+                    }
+                }
+            });
+
+            // Draw weapon
+            drawWeapon();
+        }
+
+        // Draw enhanced weapon
+        function drawWeapon() {
+            const weaponWidth = 300;
+            const weaponHeight = 300;
+            const weaponX = canvas.width - weaponWidth - 100;
+            const weaponY = canvas.height - weaponHeight + weapon.recoil * 8 + Math.sin(weapon.bobAngle) * 15;
+
+            ctx.save();
+
+            // Gun shadow
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+
+            // Handle (wood grip)
+            const handleGrad = ctx.createLinearGradient(weaponX + 120, 0, weaponX + 180, 0);
+            handleGrad.addColorStop(0, '#4a2511');
+            handleGrad.addColorStop(0.5, '#6b3410');
+            handleGrad.addColorStop(1, '#4a2511');
+            ctx.fillStyle = handleGrad;
+            ctx.fillRect(weaponX + 120, weaponY + 180, 60, 90);
+
+            // Trigger guard (gold)
+            ctx.strokeStyle = '#c19a6b';
+            ctx.lineWidth = 6;
+            ctx.beginPath();
+            ctx.arc(weaponX + 150, weaponY + 200, 20, Math.PI, Math.PI * 2);
+            ctx.stroke();
+
+            // Main body (gunmetal)
+            const bodyGrad = ctx.createLinearGradient(weaponX + 80, 0, weaponX + 220, 0);
+            bodyGrad.addColorStop(0, '#2a2a2a');
+            bodyGrad.addColorStop(0.5, '#4a4a4a');
+            bodyGrad.addColorStop(1, '#2a2a2a');
+            ctx.fillStyle = bodyGrad;
+            ctx.fillRect(weaponX + 80, weaponY + 100, 140, 90);
+
+            // Barrel
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fillRect(weaponX + 100, weaponY + 50, 100, 50);
+
+            // Barrel highlights
+            ctx.fillStyle = '#3a3a3a';
+            ctx.fillRect(weaponX + 100, weaponY + 50, 100, 5);
+            ctx.fillRect(weaponX + 100, weaponY + 95, 100, 5);
+
+            // Gold trim
+            ctx.fillStyle = '#c19a6b';
+            ctx.fillRect(weaponX + 90, weaponY + 95, 120, 8);
+            ctx.fillRect(weaponX + 75, weaponY + 185, 150, 5);
+
+            // Engraving
+            ctx.fillStyle = '#d4af37';
+            ctx.font = 'italic 16px serif';
+            ctx.fillText('Grand Hyatt', weaponX + 110, weaponY + 140);
+            ctx.font = '12px serif';
+            ctx.fillText('Polite Decliner MK II', weaponX + 95, weaponY + 160);
+
+            // Muzzle flash effect
+            if (weapon.shooting && weapon.shootTimer > 12) {
+                ctx.shadowBlur = 40;
+                ctx.shadowColor = '#ffff00';
+
+                // Outer flash
+                ctx.fillStyle = 'rgba(255, 255, 0, 0.8)';
+                ctx.beginPath();
+                for (let i = 0; i < 8; i++) {
+                    const angle = (i / 8) * Math.PI * 2;
+                    const length = 40 + Math.random() * 30;
+                    const px = weaponX + 150 + Math.cos(angle) * length;
+                    const py = weaponY + 30 + Math.sin(angle) * length;
+                    if (i === 0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                }
+                ctx.closePath();
+                ctx.fill();
+
+                // Inner flash
+                ctx.fillStyle = 'rgba(255, 200, 100, 0.9)';
+                ctx.beginPath();
+                ctx.arc(weaponX + 150, weaponY + 30, 25, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Core
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                ctx.beginPath();
+                ctx.arc(weaponX + 150, weaponY + 30, 12, 0, Math.PI * 2);
+                ctx.fill();
+
+                // "NO THANKS!" text
+                ctx.shadowBlur = 5;
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 20px Courier New';
+                ctx.textAlign = 'center';
+                ctx.fillText('NO THANKS!', weaponX + 150, weaponY + 10);
+            }
+
+            ctx.restore();
+        }
+
+        // Draw minimap
+        function drawMinimap() {
+            const scale = minimapCanvas.width / (MAP_SIZE * TILE_SIZE);
+
+            minimapCtx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            minimapCtx.fillRect(0, 0, minimapCanvas.width, minimapCanvas.height);
+
+            // Draw map
+            for (let y = 0; y < MAP_SIZE; y++) {
+                for (let x = 0; x < MAP_SIZE; x++) {
+                    if (map[y][x] !== 0) {
+                        if (map[y][x] === 1) minimapCtx.fillStyle = '#888';
+                        else if (map[y][x] === 2) minimapCtx.fillStyle = '#654';
+                        else minimapCtx.fillStyle = '#c19a6b';
+
+                        minimapCtx.fillRect(
+                            x * TILE_SIZE * scale,
+                            y * TILE_SIZE * scale,
+                            TILE_SIZE * scale,
+                            TILE_SIZE * scale
+                        );
+                    }
+                }
+            }
+
+            // Draw enemies
+            minimapCtx.fillStyle = '#ff0000';
+            enemies.forEach(enemy => {
+                minimapCtx.beginPath();
+                minimapCtx.arc(enemy.x * scale, enemy.y * scale, 3, 0, Math.PI * 2);
+                minimapCtx.fill();
+            });
+
+            // Draw player
+            minimapCtx.fillStyle = '#00ff00';
+            minimapCtx.beginPath();
+            minimapCtx.arc(player.x * scale, player.y * scale, 4, 0, Math.PI * 2);
+            minimapCtx.fill();
+
+            // Draw direction line
+            minimapCtx.strokeStyle = '#00ff00';
+            minimapCtx.lineWidth = 2;
+            minimapCtx.beginPath();
+            minimapCtx.moveTo(player.x * scale, player.y * scale);
+            minimapCtx.lineTo(
+                player.x * scale + Math.cos(player.angle) * 15,
+                player.y * scale + Math.sin(player.angle) * 15
+            );
+            minimapCtx.stroke();
+        }
+
+        // Game loop
+        function gameLoop() {
+            update();
+            render3D();
+            drawMinimap();
+
+            if (gameRunning) {
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        // Game over
+        function gameOver() {
+            gameRunning = false;
+            document.getElementById('gameOver').style.display = 'block';
+            document.getElementById('finalScore').textContent = score;
+            document.exitPointerLock();
+        }
+
+        // Start game
+        function startGame() {
+            document.getElementById('startScreen').style.display = 'none';
+            gameRunning = true;
+            score = 0;
+            health = 100;
+            wave = 1;
+            player.x = MAP_SIZE * TILE_SIZE / 2;
+            player.y = MAP_SIZE * TILE_SIZE / 2;
+            player.angle = 0;
+            enemies.length = 0;
+            bullets.length = 0;
+            particles.length = 0;
+
+            // Spawn initial enemies
+            for (let i = 0; i < 4; i++) {
+                spawnEnemy();
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Restart game
+        function restartGame() {
+            document.getElementById('gameOver').style.display = 'none';
+            startGame();
+        }
+    </script>
+</body>
+</html>
