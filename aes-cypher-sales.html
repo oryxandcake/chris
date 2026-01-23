@@ -169,19 +169,27 @@
 
         .screenshot-img {
             width: 100%;
-            height: 350px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 1.2rem;
+            height: auto;
             position: relative;
+        }
+
+        .screenshot-img img {
+            width: 100%;
+            height: auto;
+            display: block;
         }
 
         .screenshot-placeholder {
             text-align: center;
             padding: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-size: 1.2rem;
+            min-height: 350px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
 
         .screenshot-card h3 {
@@ -359,46 +367,18 @@
             <div class="screenshot-grid">
                 <div class="screenshot-card">
                     <div class="screenshot-img">
-                        <div class="screenshot-placeholder">
-                            <div style="font-size: 4rem; margin-bottom: 20px;">🔓</div>
-                            <div>Decryption Mode Interface</div>
-                        </div>
+                        <img src="AES%20Crypt%20progress.png" alt="AES Cypher testing passwords in progress">
                     </div>
-                    <h3>Easy Decryption</h3>
-                    <p>Select your encrypted .aes file and enter passwords manually or load them from a file. The progress bar shows real-time status as AES Cypher tests each password from your list.</p>
+                    <h3>Automated Password Testing</h3>
+                    <p>Load a list of your commonly used passwords and watch AES Cypher test each one automatically. The progress bar and live log show exactly which password is being tested in real-time.</p>
                 </div>
 
                 <div class="screenshot-card">
                     <div class="screenshot-img">
-                        <div class="screenshot-placeholder">
-                            <div style="font-size: 4rem; margin-bottom: 20px;">🔐</div>
-                            <div>Encryption Mode Interface</div>
-                        </div>
+                        <img src="AES%20Crypt%20success.png" alt="AES Cypher successful decryption">
                     </div>
-                    <h3>Simple Encryption</h3>
-                    <p>Switch to encryption mode, select any file, create a strong password, and click encrypt. Your file is instantly protected with military-grade security.</p>
-                </div>
-
-                <div class="screenshot-card">
-                    <div class="screenshot-img">
-                        <div class="screenshot-placeholder">
-                            <div style="font-size: 4rem; margin-bottom: 20px;">✅</div>
-                            <div>Success Dialog</div>
-                        </div>
-                    </div>
-                    <h3>Password Found</h3>
-                    <p>When the correct password is found in your list, AES Cypher displays it with a convenient copy button. Eliminates manual trial-and-error testing of multiple password variations.</p>
-                </div>
-
-                <div class="screenshot-card">
-                    <div class="screenshot-img">
-                        <div class="screenshot-placeholder">
-                            <div style="font-size: 4rem; margin-bottom: 20px;">📊</div>
-                            <div>Real-Time Progress</div>
-                        </div>
-                    </div>
-                    <h3>Live Monitoring</h3>
-                    <p>Watch as AES Cypher processes your files. The detailed log shows every step, and the progress bar keeps you informed throughout the entire operation.</p>
+                    <h3>Success - Password Found!</h3>
+                    <p>When the correct password is discovered, AES Cypher displays it clearly with a convenient copy button. Your decrypted file is automatically saved and ready to use.</p>
                 </div>
             </div>
         </div>
