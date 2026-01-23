@@ -1,0 +1,39 @@
+# Mac system files
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+venv/
+*.egg-info/
+*.py
+
+# Application files
+*.app/
+*.zip
+*.bak
+*.command
+
+# Personal documents
+*.pdf
+*.docx
+*.txt
+
+# Node
+node_modules/
+
+# Passwords
+*password*
+*Password*
+
+# Encrypted files
+*.aes
+
+# Markdown docs (except README)
+*.md
+!README.md
+
+# Other
+.glitch-assets
+create_app.sh
+launcher.command
