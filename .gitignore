@@ -11,6 +11,7 @@ venv/
 # Application files
 *.app/
 *.zip
+!product-download.zip
 *.bak
 *.command
 
