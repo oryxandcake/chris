@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Does the Triple Lock Eat the Whole Economy? — UK Pension Spending Explained</title>
+<meta name="description" content="Testing the claim that the State Pension triple lock will eventually consume 100% of GDP, using official figures from the OBR and HM Treasury.">
+<style>
+  :root {
+    --bg:#f5f2ea;
+    --surface:#ffffff;
+    --surface-2:#fbf9f3;
+    --ink:#1d1b16;
+    --ink-soft:#403d35;
+    --ink-mute:#78736a;
+    --hair:#e4ddcd;
+    --hair-strong:#d2c9b4;
+    --pension:#c2570e;
+    --pension-soft:#f0d8bf;
+    --slate:#6f7b89;
+    --slate-soft:#dde1e6;
+    --forecast:#1f7a4d;
+    --health:#2563a8;
+    --danger:#b3261e;
+    --danger-soft:#f1cdc9;
+    --shadow:0 1px 2px rgba(40,32,16,.05),0 8px 28px rgba(40,32,16,.07);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#15140f;
+      --surface:#201e19;
+      --surface-2:#262420;
+      --ink:#ece8dd;
+      --ink-soft:#c8c3b6;
+      --ink-mute:#928c7e;
+      --hair:#35322a;
+      --hair-strong:#464236;
+      --pension:#f0903a;
+      --pension-soft:#5a3a1c;
+      --slate:#9aa6b4;
+      --slate-soft:#34373b;
+      --forecast:#4cc585;
+      --health:#6aa6e0;
+      --danger:#ef6f63;
+      --danger-soft:#5a2b27;
+      --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.4);
+    }
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background:var(--bg);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    line-height:1.65;
+    font-size:18px;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .wrap { max-width:880px; margin:0 auto; padding:0 22px; }
+
+  /* ---- masthead ---- */
+  .masthead { border-bottom:1px solid var(--hair); }
+  .masthead .wrap { display:flex; justify-content:space-between; align-items:center; padding-top:18px; padding-bottom:18px; }
+  .kicker {
+    font-size:12px; letter-spacing:.16em; text-transform:uppercase;
+    font-weight:700; color:var(--pension);
+  }
+  .masthead .date { font-size:13px; color:var(--ink-mute); }
+
+  /* ---- hero ---- */
+  header.hero { padding:56px 0 30px; }
+  h1 {
+    font-family:Georgia,"Times New Roman",serif;
+    font-size:46px; line-height:1.12; letter-spacing:-.015em;
+    font-weight:700; margin-bottom:20px;
+  }
+  .standfirst { font-size:21px; color:var(--ink-soft); max-width:42ch; }
+
+  .claim {
+    margin:34px 0 10px;
+    border-left:3px solid var(--pension);
+    background:var(--surface-2);
+    padding:20px 24px;
+    border-radius:0 10px 10px 0;
+  }
+  .claim .label { font-size:12px; letter-spacing:.13em; text-transform:uppercase; font-weight:700; color:var(--ink-mute); margin-bottom:6px; }
+  .claim q { font-family:Georgia,serif; font-size:22px; font-style:italic; }
+  .claim q:before, .claim q:after { content:""; }
+
+  /* ---- general typography ---- */
+  section { padding:30px 0; }
+  h2 {
+    font-family:Georgia,"Times New Roman",serif;
+    font-size:30px; line-height:1.2; letter-spacing:-.01em;
+    margin:14px 0 6px;
+  }
+  .sec-num {
+    font-size:13px; font-weight:700; letter-spacing:.1em;
+    color:var(--pension); text-transform:uppercase;
+  }
+  h3 { font-size:20px; margin:26px 0 8px; }
+  p { margin:14px 0; }
+  p .em { background:var(--pension-soft); padding:1px 5px; border-radius:4px; font-weight:600; }
+  a { color:var(--health); }
+  strong { font-weight:700; }
+  .lead { font-size:20px; color:var(--ink-soft); }
+
+  hr.rule { border:none; border-top:1px solid var(--hair); margin:8px 0; }
+
+  /* ---- stat strip ---- */
+  .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin:30px 0 8px; }
+  .stat {
+    background:var(--surface); border:1px solid var(--hair);
+    border-radius:12px; padding:16px 16px 14px; box-shadow:var(--shadow);
+  }
+  .stat .big {
+    font-family:Georgia,serif; font-size:32px; font-weight:700;
+    color:var(--pension); line-height:1;
+  }
+  .stat .cap { font-size:13.5px; color:var(--ink-soft); margin-top:8px; line-height:1.4; }
+  .stat .src { font-size:11px; color:var(--ink-mute); margin-top:7px; letter-spacing:.02em; }
+
+  /* ---- figures / charts ---- */
+  figure {
+    background:var(--surface); border:1px solid var(--hair);
+    border-radius:14px; padding:22px 22px 16px; margin:26px 0;
+    box-shadow:var(--shadow);
+  }
+  .fig-title { font-size:18px; font-weight:700; }
+  .fig-sub { font-size:14.5px; color:var(--ink-mute); margin-top:3px; margin-bottom:10px; }
+  figure svg { display:block; width:100%; height:auto; }
+  figcaption { font-size:13px; color:var(--ink-mute); margin-top:12px; border-top:1px solid var(--hair); padding-top:10px; }
+
+  /* ---- legend ---- */
+  .legend { display:flex; flex-wrap:wrap; gap:6px 18px; margin:4px 0 12px; font-size:13.5px; color:var(--ink-soft); }
+  .legend span { display:inline-flex; align-items:center; gap:7px; }
+  .swatch { width:14px; height:14px; border-radius:3px; flex-shrink:0; }
+  .swatch.line { height:4px; border-radius:2px; }
+  .swatch.dash { background:none!important; border-top:3px dashed var(--slate); height:0; width:16px; }
+
+  /* ---- data table ---- */
+  .table-wrap { overflow-x:auto; margin:8px 0 4px; }
+  table { border-collapse:collapse; width:100%; font-size:14.5px; }
+  caption { text-align:left; font-size:13px; color:var(--ink-mute); padding-bottom:8px; }
+  th, td { padding:8px 10px; text-align:right; border-bottom:1px solid var(--hair); }
+  th:first-child, td:first-child { text-align:left; }
+  thead th { font-size:12px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-mute); border-bottom:1.5px solid var(--hair-strong); }
+  tr.sub td:first-child { padding-left:26px; color:var(--ink-soft); font-style:italic; }
+  tr.sub td { color:var(--ink-soft); }
+  tr.total td { font-weight:700; border-top:1.5px solid var(--hair-strong); border-bottom:none; }
+  td.hl, tr.sub.hl td { color:var(--pension); font-weight:700; }
+
+  /* ---- interactive control panel ---- */
+  .panel {
+    background:var(--surface-2); border:1px solid var(--hair);
+    border-radius:12px; padding:18px 20px; margin-top:16px;
+  }
+  .readout { font-size:15.5px; color:var(--ink-soft); margin-bottom:14px; }
+  .readout .yr { font-family:Georgia,serif; font-size:40px; font-weight:700; color:var(--danger); line-height:1; display:block; margin-bottom:2px; }
+  .readout .yr.far { color:var(--ink-mute); }
+  .slider-row { display:flex; align-items:center; gap:14px; }
+  .slider-row label { font-size:13px; color:var(--ink-mute); white-space:nowrap; }
+  input[type=range] { -webkit-appearance:none; appearance:none; flex:1; height:6px; border-radius:3px;
+    background:linear-gradient(90deg,var(--forecast),var(--pension),var(--danger)); outline:none; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:22px; height:22px;
+    border-radius:50%; background:var(--surface); border:3px solid var(--danger); cursor:pointer; box-shadow:var(--shadow); }
+  input[type=range]::-moz-range-thumb { width:20px; height:20px; border-radius:50%; background:var(--surface);
+    border:3px solid var(--danger); cursor:pointer; }
+  .rval { font-family:Georgia,serif; font-weight:700; font-size:17px; min-width:62px; text-align:right; }
+  .presets { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+  .presets button {
+    font:inherit; font-size:12.5px; cursor:pointer;
+    background:var(--surface); color:var(--ink-soft);
+    border:1px solid var(--hair-strong); border-radius:20px; padding:6px 13px;
+    transition:all .15s ease;
+  }
+  .presets button:hover { border-color:var(--pension); color:var(--pension); }
+  .presets button.active { background:var(--pension); color:#fff; border-color:var(--pension); }
+
+  /* ---- verdict ---- */
+  .verdict { background:var(--surface); border:1px solid var(--hair-strong); border-radius:14px; padding:6px 26px 22px; box-shadow:var(--shadow); }
+  .verdict h2 { margin-top:18px; }
+  .vbadge { display:inline-block; font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+    background:var(--pension); color:#fff; padding:4px 12px; border-radius:6px; margin-top:18px; }
+  .vitem { display:flex; gap:14px; padding:16px 0; border-bottom:1px solid var(--hair); }
+  .vitem:last-child { border-bottom:none; }
+  .vdot { width:13px; height:13px; border-radius:50%; flex-shrink:0; margin-top:6px; }
+  .vdot.t { background:var(--forecast); }
+  .vdot.m { background:var(--pension); }
+  .vdot.r { background:var(--danger); }
+  .vitem .vt { font-weight:700; font-size:15.5px; }
+  .vitem p { margin:4px 0 0; font-size:16px; }
+
+  /* ---- callout ---- */
+  .note { background:var(--surface-2); border:1px solid var(--hair); border-radius:10px; padding:14px 18px; font-size:15.5px; color:var(--ink-soft); margin:18px 0; }
+
+  details { margin:18px 0; border:1px solid var(--hair); border-radius:10px; background:var(--surface); padding:0 18px; }
+  summary { cursor:pointer; font-weight:700; padding:14px 0; font-size:15.5px; }
+  details[open] summary { border-bottom:1px solid var(--hair); margin-bottom:6px; }
+  details p, details li { font-size:15px; }
+  details ul { margin:8px 0 14px 22px; }
+  details li { margin:6px 0; }
+
+  /* ---- sources ---- */
+  .sources { padding-bottom:10px; }
+  .sources ol { margin-left:20px; font-size:15px; }
+  .sources li { margin:11px 0; }
+  .sources .meta { color:var(--ink-mute); font-size:13.5px; }
+
+  footer { border-top:1px solid var(--hair); padding:26px 0 50px; color:var(--ink-mute); font-size:13.5px; }
+  footer p { margin:6px 0; }
+
+  @media (max-width:680px) {
+    body { font-size:17px; }
+    h1 { font-size:33px; }
+    h2 { font-size:25px; }
+    .standfirst { font-size:18px; }
+    .stats { grid-template-columns:repeat(2,1fr); }
+    .stat .big { font-size:27px; }
+    figure { padding:16px 13px 12px; }
+    .claim q { font-size:19px; }
+    .readout .yr { font-size:33px; }
+    .slider-row { flex-wrap:wrap; }
+  }
+</style>
+</head>
+<body>
+
+<div class="masthead">
+  <div class="wrap">
+    <span class="kicker">Data Explainer</span>
+    <span class="date">UK public finances &middot; figures current to 2024&ndash;25</span>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <header class="hero">
+    <h1>Does the triple lock eat the whole economy?</h1>
+    <p class="standfirst">A claim worth checking &mdash; that the State Pension&rsquo;s &ldquo;triple lock&rdquo; will eventually swallow 100% of GDP. Here is what the official numbers actually say.</p>
+
+    <div class="claim">
+      <div class="label">The claim being tested</div>
+      <q>The triple-lock pension means that, eventually, it will consume 100% of GDP.</q>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="big">&pound;138bn</div>
+        <div class="cap">State Pension spending, 2024&ndash;25</div>
+        <div class="src">OBR, July 2025</div>
+      </div>
+      <div class="stat">
+        <div class="big">~5%</div>
+        <div class="cap">of GDP spent on the State Pension today</div>
+        <div class="src">OBR, July 2025</div>
+      </div>
+      <div class="stat">
+        <div class="big">7.7%</div>
+        <div class="cap">of GDP by the early 2070s &mdash; OBR central projection</div>
+        <div class="src">OBR FRS, July 2025</div>
+      </div>
+      <div class="stat">
+        <div class="big">&pound;15.5bn</div>
+        <div class="cap">a year &mdash; cost of the triple lock by 2029&ndash;30, 3&times; the 2012 estimate</div>
+        <div class="src">OBR, July 2025</div>
+      </div>
+    </div>
+  </header>
+
+  <hr class="rule">
+
+  <section>
+    <span class="sec-num">Part 1</span>
+    <h2>Where the UK&rsquo;s &pound;1.29 trillion goes</h2>
+    <p>In 2024&ndash;25 the UK government spent <strong>&pound;1,288 billion</strong> &mdash; about <strong>44.0% of GDP</strong>. To see whether the State Pension is on track to &ldquo;consume the economy,&rdquo; it helps to first see how big it is next to everything else the state pays for.</p>
+    <p>The chart below breaks public-service spending into its official functions. <span class="em">Social protection</span> &mdash; pensions and benefits combined &mdash; is the single biggest area. The <strong>State Pension</strong> alone (the orange block) is roughly <strong>4.7% of GDP</strong>: bigger than defence, schools or debt interest individually, but still a long way short of swallowing the whole pie.</p>
+
+    <figure>
+      <div class="fig-title">UK public spending by function, 2024&ndash;25</div>
+      <div class="fig-sub">Share of GDP. The State Pension is shown split out from the wider social-protection budget.</div>
+      <div id="chart1"></div>
+      <div class="table-wrap">
+        <table>
+          <caption>Full figures &mdash; HM Treasury, Public Spending Statistics (Dec 2025); State Pension from OBR (Jul 2025).</caption>
+          <thead>
+            <tr><th>Function</th><th>&pound;bn</th><th>% of GDP</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Social protection (all pensions &amp; benefits)</td><td>386.5</td><td>13.2%</td></tr>
+            <tr class="sub hl"><td>of which: State Pension</td><td>138.0</td><td>4.7%</td></tr>
+            <tr><td>Health</td><td>242.5</td><td>8.3%</td></tr>
+            <tr><td>General public services <span class="meta">(incl. ~&pound;105bn debt interest)</span></td><td>159.0</td><td>5.4%</td></tr>
+            <tr><td>Education</td><td>122.7</td><td>4.2%</td></tr>
+            <tr><td>Economic affairs</td><td>88.9</td><td>3.0%</td></tr>
+            <tr><td>Defence</td><td>63.7</td><td>2.2%</td></tr>
+            <tr><td>Public order &amp; safety</td><td>51.7</td><td>1.8%</td></tr>
+            <tr><td>Housing &amp; community amenities</td><td>22.0</td><td>0.8%</td></tr>
+            <tr><td>Environment protection</td><td>17.1</td><td>0.6%</td></tr>
+            <tr><td>Recreation, culture &amp; religion</td><td>14.1</td><td>0.5%</td></tr>
+            <tr class="total"><td>Total spending on services</td><td>1,168.2</td><td>39.9%</td></tr>
+            <tr class="total"><td>Total Managed Expenditure</td><td>1,288.1</td><td>44.0%</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <figcaption>Functions sum to &ldquo;spending on services&rdquo; (39.9% of GDP); Total Managed Expenditure (44.0%) also includes accounting adjustments and net public-sector pension costs. The OBR rounds the State Pension to &ldquo;about 5%&rdquo; of GDP; the 4.7% here is the same &pound;138bn measured against 2024&ndash;25 GDP.</figcaption>
+    </figure>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <span class="sec-num">Part 2</span>
+    <h2>How the triple lock works &mdash; and why it &ldquo;ratchets&rdquo;</h2>
+    <p>Since 2011 the State Pension has risen every April by the <strong>highest of three</strong> measures:</p>
+    <p class="note"><strong>1.</strong> average earnings growth &nbsp;&bull;&nbsp; <strong>2.</strong> CPI inflation &nbsp;&bull;&nbsp; <strong>3.</strong> a flat <strong>2.5%</strong> floor</p>
+    <p>Because the pension always takes the <em>best</em> of the three, it never has a &ldquo;bad year&rdquo; relative to wages. In a year of high inflation it tracks prices; in a flat year it still gets 2.5%. Recent rises show the pattern: <strong>+10.1%</strong> in 2023 (inflation), <strong>+8.5%</strong> in 2024 (earnings), <strong>+4.1%</strong> in 2025 (earnings).</p>
+    <p>This is the <span class="em">ratchet effect</span>. Over a full economic cycle the pension gains a little more than earnings &mdash; and since GDP per person roughly tracks earnings, the pension&rsquo;s <em>share of the economy drifts upward and never settles back</em>. The OBR notes the non-earnings parts of the lock were triggered in <strong>8 of the 13 years</strong> to 2025. This &ldquo;no equilibrium&rdquo; property is the seed of truth inside the 100%-of-GDP claim &mdash; and we test exactly where it leads in Part 4.</p>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <span class="sec-num">Part 3</span>
+    <h2>What the OBR actually projects</h2>
+    <p>The <strong>Office for Budget Responsibility</strong> &mdash; the government&rsquo;s independent fiscal watchdog &mdash; publishes the official long-term projections. Its July 2025 <em>Fiscal Risks and Sustainability</em> report is the authoritative source here. It does <strong>not</strong> forecast pensions reaching 100% of GDP.</p>
+    <p>Instead it projects State Pension spending rising from about <strong>5% of GDP today to 7.7% by the early 2070s</strong>. Of that 2.7-point rise, the OBR attributes <strong>1.6 points to the triple lock itself</strong> (the rest is the ageing population). Health spending is the bigger pressure &mdash; projected to climb from ~8% to nearly <strong>15% of GDP</strong>.</p>
+
+    <figure>
+      <div class="fig-title">OBR long-term projection to the early 2070s</div>
+      <div class="fig-sub">Spending as a share of GDP, on unchanged policy.</div>
+      <div class="legend">
+        <span><span class="swatch line" style="background:var(--pension)"></span>State Pension &mdash; triple lock</span>
+        <span><span class="swatch dash"></span>State Pension &mdash; earnings uprating only</span>
+        <span><span class="swatch line" style="background:var(--health)"></span>Health</span>
+      </div>
+      <div id="chart2"></div>
+      <figcaption>Straight-line trajectories between the OBR&rsquo;s published start and end points; the real path has small steps as the State Pension age rises. Source: OBR, <em>Fiscal Risks and Sustainability</em>, July 2025.</figcaption>
+    </figure>
+
+    <p>The OBR&rsquo;s real warning is not about the 2070s pension line &mdash; it is about the total. With health, pensions and an ageing population combined, and on unchanged policy, it projects public debt rising <strong>above 270% of GDP by the early 2070s</strong>, calling the path &ldquo;unsustainable.&rdquo; That is the genuine, dated problem &mdash; far sooner and far more concrete than &ldquo;100% of GDP.&rdquo;</p>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <span class="sec-num">Part 4</span>
+    <h2>So &mdash; 100% of GDP?</h2>
+    <p>Here is the logic behind the claim. Because the triple lock has <strong>no stable share of GDP</strong> (Part 2), if you assume it runs <em>completely unchanged forever</em>, its share doesn&rsquo;t level off &mdash; it keeps compounding. Compound growth with no ceiling will, given enough time, cross <em>any</em> line you draw, including 100%.</p>
+    <p>So the question isn&rsquo;t really <em>whether</em> &mdash; it is <strong>how long</strong>. The chart below extrapolates the ratchet forward. Drag the slider to set how fast the pension outpaces GDP each year, and watch when the line reaches 100%.</p>
+
+    <figure>
+      <div class="fig-title">Extrapolating the ratchet: when would the State Pension reach 100% of GDP?</div>
+      <div class="fig-sub" style="color:var(--danger);font-weight:600">Illustrative extrapolation &mdash; NOT a forecast. It assumes the triple lock runs unchanged for centuries.</div>
+      <div id="chart3"></div>
+      <div class="panel">
+        <div class="readout" id="readout"></div>
+        <div class="slider-row">
+          <label>Slower</label>
+          <input type="range" id="rSlider" min="0.1" max="1.5" step="0.05" value="1.0">
+          <label>Faster</label>
+          <span class="rval" id="rVal">1.00%</span>
+        </div>
+        <div class="presets" id="presets">
+          <button data-r="0.2">Original 2012 Treasury estimate &middot; 0.2%/yr</button>
+          <button data-r="0.6">OBR central, 2025 &middot; 0.6%/yr</button>
+          <button data-r="1.0">OBR &ldquo;volatile economy&rdquo; &middot; 1.0%/yr</button>
+        </div>
+      </div>
+      <figcaption>The &ldquo;ratchet rate&rdquo; is how much faster the pension grows than GDP each year. The 0.6% and 1.0% presets are calibrated to reproduce the OBR&rsquo;s own July 2025 figures by 2073 (see Methodology). The OBR&rsquo;s actual forecast &mdash; the short green line &mdash; ends in the early 2070s; everything to its right is pure extrapolation.</figcaption>
+    </figure>
+
+    <p>The result is the honest answer to the claim. Even on the OBR&rsquo;s <em>volatile-economy</em> assumption &mdash; a deliberately pessimistic case &mdash; the pension does not reach 100% of GDP until around <strong>the year 2300s</strong>. On the OBR&rsquo;s central assumption it is the <strong>2500s</strong>. On the Treasury&rsquo;s original 2012 estimate it is past the year <strong>3500</strong>. Long before any of that, the curve would pass the size of the entire current UK state (44% of GDP) &mdash; and long before <em>that</em>, the policy would have been changed.</p>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <div class="verdict">
+      <span class="vbadge">Verdict</span>
+      <h2>Misleading &mdash; but built on a real flaw</h2>
+      <div class="vitem">
+        <div class="vdot t"></div>
+        <div>
+          <div class="vt">What the claim gets right</div>
+          <p>The triple lock genuinely has <strong>no stable share of GDP</strong>. By guaranteeing the best of earnings, inflation or 2.5%, it tends to outgrow the economy. Run unchanged forever, its share rises without limit &mdash; so &ldquo;eventually 100%&rdquo; is a real mathematical property, not nonsense.</p>
+        </div>
+      </div>
+      <div class="vitem">
+        <div class="vdot m"></div>
+        <div>
+          <div class="vt">Why it is misleading</div>
+          <p>&ldquo;Eventually&rdquo; means roughly <strong>300 to 1,500 years</strong>, depending on assumptions &mdash; and it is not a forecast anyone makes. The OBR&rsquo;s actual central projection is <strong>7.7% of GDP by the early 2070s</strong>, up from ~5%. No policy in history has survived unchanged for three centuries.</p>
+        </div>
+      </div>
+      <div class="vitem">
+        <div class="vdot r"></div>
+        <div>
+          <div class="vt">The real problem &mdash; this century</div>
+          <p>The triple lock is set to cost <strong>&pound;15.5bn a year more than earnings-uprating by 2029&ndash;30</strong> (three times the original estimate). Combined with health and ageing, the OBR projects national debt above <strong>270% of GDP by the 2070s</strong> on unchanged policy. That &mdash; not the year 2300 &mdash; is why the OBR calls the triple lock a &ldquo;significant&rdquo; fiscal risk.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <details>
+    <summary>Methodology &amp; assumptions</summary>
+    <p>The extrapolation in Part 4 models State Pension spending as a share of GDP, <em>P</em>, starting at <strong>5.0%</strong> in 2025 (the OBR&rsquo;s rounded current figure) and compounding:</p>
+    <ul>
+      <li><strong>P(t) = 5.0% &times; (1 + r)<sup>t</sup></strong>, where <em>t</em> is years after 2025 and <em>r</em> is the &ldquo;ratchet rate&rdquo; &mdash; the average amount by which the pension outpaces GDP each year.</li>
+      <li>It reaches 100% of GDP when <em>t</em> = ln(20) / ln(1 + r).</li>
+      <li><strong>r = 0.6%</strong> reproduces the OBR&rsquo;s stated result: it lifts the pension to ~6.7% of GDP by 2073, matching the <strong>1.6-percentage-point</strong> triple-lock contribution in the July 2025 report.</li>
+      <li><strong>r = 1.0%</strong> reproduces the OBR&rsquo;s &ldquo;volatile economy&rdquo; case &mdash; the 1.6-point contribution plus the extra <strong>1.5% of GDP</strong> the OBR says persistent inflation/earnings volatility could add by the 2070s.</li>
+      <li><strong>r = 0.2%</strong> is the assumption used when the triple lock was introduced in 2012 (pension growth ~0.2 points above earnings).</li>
+    </ul>
+    <p>This is a deliberately simple long-run model. It isolates the triple-lock ratchet and treats the pensioner share of the population as broadly stable over the very long run (it is bounded &mdash; it cannot rise forever), so the ratchet is the only unbounded driver. It ignores future policy change entirely, which is precisely why it is an illustration of the mechanism, not a forecast. The OBR&rsquo;s own projections (Part 3) are the proper forecasts and stop in the 2070s.</p>
+  </details>
+
+  <section class="sources">
+    <h2>Sources</h2>
+    <p class="lead" style="font-size:16px">All figures are from the UK&rsquo;s official fiscal bodies. The Office for Budget Responsibility is the independent public body created by statute to produce the government&rsquo;s fiscal forecasts; the House of Commons Library is Parliament&rsquo;s impartial research service.</p>
+    <ol>
+      <li><a href="https://obr.uk/frs/fiscal-risks-and-sustainability-july-2025/">OBR &mdash; Fiscal Risks and Sustainability, July 2025</a>. <span class="meta">State Pension at ~5% of GDP (&pound;138bn) rising to 7.7% by the early 2070s; triple lock = 1.6pp of the rise; &pound;15.5bn annual cost by 2029&ndash;30; volatile-economy case adds 1.5% of GDP.</span></li>
+      <li><a href="https://obr.uk/public-debt-projected-to-exceed-270-per-cent-of-gdp-by-the-mid-2070s/">OBR &mdash; &ldquo;Public debt projected to exceed 270 per cent of GDP by the mid-2070s.&rdquo;</a> <span class="meta">Long-term debt path on unchanged policy; health spending toward ~15% of GDP.</span></li>
+      <li><a href="https://www.gov.uk/government/statistics/public-spending-statistics-release-december-2025/public-spending-statistics-december-2025">GOV.UK / HM Treasury &mdash; Public Spending Statistics, December 2025</a>. <span class="meta">Total Managed Expenditure &pound;1,288.1bn (44.0% of GDP) and the breakdown by function for 2024&ndash;25.</span></li>
+      <li><a href="https://obr.uk/forecasts-in-depth/tax-by-tax-spend-by-spend/welfare-spending-pensioner-benefits/">OBR &mdash; Welfare spending: pensioner benefits</a>. <span class="meta">State Pension as the largest single item of welfare spending.</span></li>
+      <li><a href="https://commonslibrary.parliament.uk/research-briefings/cbp-7812/">House of Commons Library &mdash; State Pension triple lock (CBP-7812)</a>. <span class="meta">How the triple lock works; the ratchet effect; cost vs earnings uprating.</span></li>
+      <li><a href="https://commonslibrary.parliament.uk/research-briefings/cbp-10105/">House of Commons Library &mdash; Benefits Uprating 2025/26 (CBP-10105)</a>. <span class="meta">2023&ndash;2025 uprating percentages and current State Pension rates.</span></li>
+      <li><a href="https://obr.uk/forecasts-in-depth/tax-by-tax-spend-by-spend/debt-interest-central-government-net/">OBR &mdash; Debt interest (central government, net of APF)</a>. <span class="meta">Debt-interest spending of roughly &pound;105bn in 2024&ndash;25.</span></li>
+    </ol>
+  </section>
+
+</div>
+
+<footer>
+  <div class="wrap">
+    <p>Built as a data explainer. Figures are current to the 2024&ndash;25 financial year and the OBR&rsquo;s July 2025 report.</p>
+    <p>The Part 4 extrapolation is an illustration of the triple-lock mechanism and is explicitly not a forecast. For forecasts, see the OBR sources above.</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ============ shared helpers ============ */
+  var NS = "http://www.w3.org/2000/svg";
+  function svgEl(tag, attrs, text) {
+    var e = document.createElementNS(NS, tag);
+    for (var k in attrs) if (attrs.hasOwnProperty(k)) e.setAttribute(k, attrs[k]);
+    if (text != null) e.textContent = text;
+    return e;
+  }
+  function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); }
+
+  /* ============ CHART 1 — spending by function ============ */
+  function renderChart1() {
+    var host = document.getElementById("chart1");
+    var W = 820, rowH = 25, pitch = 43, top = 16;
+    var labelR = 210, x0 = 222, x1 = 792, axisMax = 14;
+    var rows = [
+      { name: "Social protection", segs: [
+          { label: "State Pension", pct: 4.71, fill: "var(--pension)" },
+          { label: "Other benefits", pct: 8.49, fill: "var(--slate)" } ], total: 13.20 },
+      { name: "Health", pct: 8.28 },
+      { name: "General public services", pct: 5.43 },
+      { name: "Education", pct: 4.19 },
+      { name: "Economic affairs", pct: 3.04 },
+      { name: "Defence", pct: 2.18 },
+      { name: "Public order & safety", pct: 1.77 },
+      { name: "Housing & community", pct: 0.75 },
+      { name: "Environment", pct: 0.58 },
+      { name: "Recreation & culture", pct: 0.48 }
+    ];
+    var H = top + rows.length * pitch + 34;
+    var scale = (x1 - x0) / axisMax;
+    var svg = svgEl("svg", { viewBox: "0 0 " + W + " " + H, role: "img",
+      "aria-label": "Bar chart of UK public spending by function as a share of GDP in 2024-25." });
+
+    /* gridlines + axis labels */
+    for (var v = 0; v <= axisMax; v += 2) {
+      var gx = x0 + v * scale;
+      svg.appendChild(svgEl("line", { x1: gx, y1: top - 4, x2: gx, y2: top + rows.length * pitch - 12,
+        stroke: "var(--hair)", "stroke-width": 1 }));
+      svg.appendChild(svgEl("text", { x: gx, y: H - 14, "text-anchor": "middle",
+        "font-size": 12, fill: "var(--ink-mute)" }, v + "%"));
+    }
+    svg.appendChild(svgEl("text", { x: x0 + (x1 - x0) / 2, y: H - 1, "text-anchor": "middle",
+      "font-size": 11.5, fill: "var(--ink-mute)", "letter-spacing": ".05em" }, "SHARE OF GDP"));
+
+    /* rows */
+    rows.forEach(function (r, i) {
+      var y = top + i * pitch;
+      svg.appendChild(svgEl("text", { x: labelR, y: y + rowH / 2 + 5, "text-anchor": "end",
+        "font-size": 14, fill: "var(--ink)" }, r.name));
+      if (r.segs) {
+        var cx = x0;
+        r.segs.forEach(function (s) {
+          var w = s.pct * scale;
+          var rect = svgEl("rect", { x: cx, y: y, width: w, height: rowH, fill: s.fill, rx: 2 });
+          rect.appendChild(svgEl("title", {}, s.label + ": " + s.pct.toFixed(1) + "% of GDP"));
+          svg.appendChild(rect);
+          if (w > 78) svg.appendChild(svgEl("text", { x: cx + 9, y: y + rowH / 2 + 5,
+            "font-size": 12.5, fill: "#fff", "font-weight": 700 }, s.label));
+          cx += w;
+        });
+        svg.appendChild(svgEl("text", { x: cx + 9, y: y + rowH / 2 + 5, "font-size": 14,
+          "font-weight": 700, fill: "var(--ink)" }, r.total.toFixed(1) + "%"));
+      } else {
+        var w2 = r.pct * scale;
+        var rc = svgEl("rect", { x: x0, y: y, width: w2, height: rowH, fill: "var(--slate)", rx: 2 });
+        rc.appendChild(svgEl("title", {}, r.name + ": " + r.pct.toFixed(1) + "% of GDP"));
+        svg.appendChild(rc);
+        svg.appendChild(svgEl("text", { x: x0 + w2 + 9, y: y + rowH / 2 + 5, "font-size": 14,
+          "font-weight": 700, fill: "var(--ink)" }, r.pct.toFixed(1) + "%"));
+      }
+    });
+    clear(host); host.appendChild(svg);
+  }
+
+  /* ============ CHART 2 — OBR projection ============ */
+  function renderChart2() {
+    var host = document.getElementById("chart2");
+    var W = 820, H = 430;
+    var px0 = 64, px1 = 720, py0 = 30, py1 = 360;
+    var xmin = 2024, xmax = 2075, ymax = 16;
+    function X(yr) { return px0 + (yr - xmin) / (xmax - xmin) * (px1 - px0); }
+    function Y(p) { return py1 - p / ymax * (py1 - py0); }
+    var svg = svgEl("svg", { viewBox: "0 0 " + W + " " + H, role: "img",
+      "aria-label": "Line chart of OBR projections for State Pension and health spending as a share of GDP to the 2070s." });
+
+    /* y grid */
+    for (var p = 0; p <= ymax; p += 4) {
+      svg.appendChild(svgEl("line", { x1: px0, y1: Y(p), x2: px1, y2: Y(p),
+        stroke: "var(--hair)", "stroke-width": 1 }));
+      svg.appendChild(svgEl("text", { x: px0 - 9, y: Y(p) + 4, "text-anchor": "end",
+        "font-size": 12, fill: "var(--ink-mute)" }, p + "%"));
+    }
+    /* x ticks */
+    for (var yr = 2030; yr <= 2070; yr += 10) {
+      svg.appendChild(svgEl("text", { x: X(yr), y: py1 + 22, "text-anchor": "middle",
+        "font-size": 12, fill: "var(--ink-mute)" }, yr));
+    }
+    svg.appendChild(svgEl("text", { x: X(2024), y: py1 + 22, "text-anchor": "middle",
+      "font-size": 12, fill: "var(--ink-mute)" }, "2024"));
+
+    /* triple-lock vs earnings shaded gap */
+    svg.appendChild(svgEl("polygon", {
+      points: X(2024) + "," + Y(5.0) + " " + X(2073) + "," + Y(7.7) + " " +
+              X(2073) + "," + Y(6.1) + " " + X(2024) + "," + Y(5.0),
+      fill: "var(--pension)", "fill-opacity": 0.16 }));
+
+    /* health line */
+    svg.appendChild(svgEl("line", { x1: X(2024), y1: Y(8.2), x2: X(2072), y2: Y(14.8),
+      stroke: "var(--health)", "stroke-width": 3, "stroke-linecap": "round" }));
+    /* earnings-only dashed */
+    svg.appendChild(svgEl("line", { x1: X(2024), y1: Y(5.0), x2: X(2073), y2: Y(6.1),
+      stroke: "var(--slate)", "stroke-width": 2.5, "stroke-dasharray": "7 5", "stroke-linecap": "round" }));
+    /* triple lock */
+    svg.appendChild(svgEl("line", { x1: X(2024), y1: Y(5.0), x2: X(2073), y2: Y(7.7),
+      stroke: "var(--pension)", "stroke-width": 3.5, "stroke-linecap": "round" }));
+
+    /* endpoint dots */
+    function dot(yr, p, col) { svg.appendChild(svgEl("circle", { cx: X(yr), cy: Y(p), r: 5,
+      fill: col, stroke: "var(--surface)", "stroke-width": 2 })); }
+    dot(2024, 5.0, "var(--pension)");
+    dot(2073, 7.7, "var(--pension)");
+    dot(2073, 6.1, "var(--slate)");
+    dot(2072, 14.8, "var(--health)");
+    dot(2024, 8.2, "var(--health)");
+
+    /* annotations */
+    function lab(x, y, text, col, anchor, weight) {
+      svg.appendChild(svgEl("text", { x: x, y: y, "text-anchor": anchor || "start",
+        "font-size": 13, fill: col, "font-weight": weight || 400 }, text));
+    }
+    lab(X(2072) - 4, Y(14.8) - 12, "Health — to ~14.8%", "var(--health)", "end", 700);
+    lab(X(2073) - 6, Y(7.7) - 12, "State Pension 7.7%", "var(--pension)", "end", 700);
+    lab(X(2073) - 6, Y(6.1) + 22, "earnings uprating only: 6.1%", "var(--slate)", "end", 400);
+    lab(X(2045), Y(7.6), "triple lock adds 1.6% of GDP", "var(--pension)", "middle", 600);
+    lab(X(2024), Y(5.0) + 24, "5.0% today", "var(--ink-mute)", "start", 400);
+
+    clear(host); host.appendChild(svg);
+  }
+
+  /* ============ CHART 3 — extrapolation (interactive) ============ */
+  var C3 = { W: 820, H: 470, px0: 70, px1: 754, py0: 40, py1: 410,
+             xmin: 2025, xmax: 2525, ymax: 110, NOW: 2026 };
+  function X3(yr) { return C3.px0 + (yr - C3.xmin) / (C3.xmax - C3.xmin) * (C3.px1 - C3.px0); }
+  function Y3(p) { return C3.py1 - Math.min(p, C3.ymax) / C3.ymax * (C3.py1 - C3.py0); }
+
+  function crossYear(r, target) {
+    return 2025 + Math.log(target / 5.0) / Math.log(1 + r);
+  }
+
+  function renderChart3(rPct) {
+    var host = document.getElementById("chart3");
+    var r = rPct / 100;
+    var svg = svgEl("svg", { viewBox: "0 0 " + C3.W + " " + C3.H, role: "img",
+      "aria-label": "Extrapolation chart showing when triple-lock pension spending would reach 100% of GDP." });
+
+    /* clip for the curve */
+    var defs = svgEl("defs", {});
+    var cp = svgEl("clipPath", { id: "clip3" });
+    cp.appendChild(svgEl("rect", { x: C3.px0, y: C3.py0 - 2, width: C3.px1 - C3.px0, height: C3.py1 - C3.py0 + 2 }));
+    defs.appendChild(cp);
+    svg.appendChild(defs);
+
+    /* OBR forecast-horizon shading (2025-2073) */
+    svg.appendChild(svgEl("rect", { x: X3(2025), y: C3.py0, width: X3(2073) - X3(2025),
+      height: C3.py1 - C3.py0, fill: "var(--forecast)", "fill-opacity": 0.10 }));
+    svg.appendChild(svgEl("line", { x1: X3(2073), y1: Y3(100) + 8, x2: X3(2073), y2: C3.py1,
+      stroke: "var(--forecast)", "stroke-width": 1.5, "stroke-dasharray": "3 4" }));
+
+    /* y grid */
+    for (var p = 0; p <= 100; p += 20) {
+      svg.appendChild(svgEl("line", { x1: C3.px0, y1: Y3(p), x2: C3.px1, y2: Y3(p),
+        stroke: "var(--hair)", "stroke-width": 1 }));
+      svg.appendChild(svgEl("text", { x: C3.px0 - 9, y: Y3(p) + 4, "text-anchor": "end",
+        "font-size": 12, fill: "var(--ink-mute)" }, p + "%"));
+    }
+    /* x ticks */
+    for (var yr = 2025; yr <= 2525; yr += 100) {
+      svg.appendChild(svgEl("text", { x: X3(yr), y: C3.py1 + 22, "text-anchor": "middle",
+        "font-size": 12, fill: "var(--ink-mute)" }, yr));
+    }
+    svg.appendChild(svgEl("text", { x: (C3.px0 + C3.px1) / 2, y: C3.H - 8, "text-anchor": "middle",
+      "font-size": 11.5, fill: "var(--ink-mute)", "letter-spacing": ".05em" }, "YEAR"));
+
+    /* 44% reference line */
+    svg.appendChild(svgEl("line", { x1: C3.px0, y1: Y3(44), x2: C3.px1, y2: Y3(44),
+      stroke: "var(--slate)", "stroke-width": 1.5, "stroke-dasharray": "6 5" }));
+    svg.appendChild(svgEl("text", { x: C3.px1 - 4, y: Y3(44) - 7, "text-anchor": "end",
+      "font-size": 12, fill: "var(--slate)", "font-weight": 600 },
+      "44% — size of the entire UK state today"));
+
+    /* 100% line */
+    svg.appendChild(svgEl("line", { x1: C3.px0, y1: Y3(100), x2: C3.px1, y2: Y3(100),
+      stroke: "var(--danger)", "stroke-width": 2.5 }));
+    svg.appendChild(svgEl("text", { x: C3.px0 + 6, y: Y3(100) - 8, "font-size": 13,
+      fill: "var(--danger)", "font-weight": 700 }, "100% of GDP — the entire economy"));
+
+    /* curve points */
+    var pts = [];
+    for (var t = 0; t <= 500; t += 4) {
+      pts.push([2025 + t, 5.0 * Math.pow(1 + r, t)]);
+    }
+    var curveStr = pts.map(function (d) { return X3(d[0]) + "," + Y3(d[1]); }).join(" ");
+    var areaStr = X3(2025) + "," + Y3(0) + " " + curveStr + " " + X3(2525) + "," + Y3(0);
+
+    var g = svgEl("g", { "clip-path": "url(#clip3)" });
+    g.appendChild(svgEl("polygon", { points: areaStr, fill: "var(--danger)", "fill-opacity": 0.12 }));
+    g.appendChild(svgEl("polyline", { points: curveStr, fill: "none",
+      stroke: "var(--danger)", "stroke-width": 3.5, "stroke-linejoin": "round" }));
+    svg.appendChild(g);
+
+    /* OBR forecast stub (2025-2073) */
+    svg.appendChild(svgEl("line", { x1: X3(2025), y1: Y3(5.0), x2: X3(2073), y2: Y3(7.7),
+      stroke: "var(--forecast)", "stroke-width": 4, "stroke-linecap": "round" }));
+    svg.appendChild(svgEl("circle", { cx: X3(2073), cy: Y3(7.7), r: 5,
+      fill: "var(--forecast)", stroke: "var(--surface)", "stroke-width": 2 }));
+    svg.appendChild(svgEl("line", { x1: X3(2073) + 1, y1: Y3(7.7) - 3, x2: X3(2073) + 22, y2: 162,
+      stroke: "var(--forecast)", "stroke-width": 1, "stroke-dasharray": "2 3" }));
+    svg.appendChild(svgEl("text", { x: X3(2073) + 26, y: 150, "font-size": 12.5,
+      fill: "var(--forecast)", "font-weight": 700 }, "The OBR's official forecast"));
+    svg.appendChild(svgEl("text", { x: X3(2073) + 26, y: 166, "font-size": 12.5,
+      fill: "var(--forecast)", "font-weight": 700 }, "ends 2073 — just 7.7% of GDP"));
+
+    /* crossing markers */
+    var yc = crossYear(r, 100);
+    if (yc <= 2525) {
+      var xc = X3(yc);
+      svg.appendChild(svgEl("line", { x1: xc, y1: Y3(100), x2: xc, y2: C3.py1,
+        stroke: "var(--danger)", "stroke-width": 1.5, "stroke-dasharray": "4 4" }));
+      svg.appendChild(svgEl("circle", { cx: xc, cy: Y3(100), r: 6.5,
+        fill: "var(--danger)", stroke: "var(--surface)", "stroke-width": 2.5 }));
+      var ty = Math.round(yc);
+      svg.appendChild(svgEl("text", { x: xc, y: C3.py1 - 10,
+        "text-anchor": xc > C3.px1 - 90 ? "end" : "middle",
+        "font-size": 13, fill: "var(--danger)", "font-weight": 700 }, "reaches 100% in " + ty));
+    } else {
+      var vEnd = pts[pts.length - 1][1];
+      svg.appendChild(svgEl("text", { x: C3.px1 - 6, y: Y3(vEnd) - 12, "text-anchor": "end",
+        "font-size": 12, fill: "var(--ink-mute)", "font-weight": 600 },
+        "still climbing — 100% of GDP not until ~" + Math.round(yc)));
+    }
+    /* 44% crossing marker */
+    var y44 = crossYear(r, 44);
+    if (y44 <= 2525) {
+      svg.appendChild(svgEl("circle", { cx: X3(y44), cy: Y3(44), r: 4.5,
+        fill: "var(--slate)", stroke: "var(--surface)", "stroke-width": 2 }));
+    }
+
+    clear(host); host.appendChild(svg);
+  }
+
+  /* ============ readout + controls ============ */
+  function fmtYear(y) { return String(Math.round(y)); }
+
+  function updateReadout(rPct) {
+    var r = rPct / 100;
+    var yc = crossYear(r, 100);
+    var ycR = Math.round(yc);
+    var away = ycR - C3.NOW;
+    var p2073 = (5.0 * Math.pow(1 + r, 48)).toFixed(1);
+    var el = document.getElementById("readout");
+    var farClass = yc > 2525 ? " far" : "";
+    var awayText;
+    if (away >= 1000) awayText = "about " + (Math.round(away / 100) * 100).toLocaleString("en-GB") + " years away";
+    else awayText = "about " + away.toLocaleString("en-GB") + " years from now";
+    el.innerHTML =
+      '<span class="yr' + farClass + '">' + fmtYear(yc) + '</span>' +
+      'At a ratchet rate of <strong>' + rPct.toFixed(2) + '% a year</strong>, State Pension spending reaches ' +
+      '<strong>100% of GDP</strong> in roughly the year above &mdash; ' + awayText + '. ' +
+      'For comparison, by the OBR&rsquo;s forecast horizon (the early 2070s) it would be just ' +
+      '<strong>' + p2073 + '% of GDP</strong>.';
+  }
+
+  function setActivePreset(rPct) {
+    var btns = document.querySelectorAll("#presets button");
+    for (var i = 0; i < btns.length; i++) {
+      var pr = parseFloat(btns[i].getAttribute("data-r"));
+      btns[i].classList.toggle("active", Math.abs(pr - rPct) < 0.001);
+    }
+  }
+
+  function update(rPct) {
+    document.getElementById("rVal").textContent = rPct.toFixed(2) + "%";
+    renderChart3(rPct);
+    updateReadout(rPct);
+    setActivePreset(rPct);
+  }
+
+  /* ============ init ============ */
+  function init() {
+    renderChart1();
+    renderChart2();
+    var slider = document.getElementById("rSlider");
+    slider.addEventListener("input", function () { update(parseFloat(slider.value)); });
+    var btns = document.querySelectorAll("#presets button");
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].addEventListener("click", function () {
+        var r = parseFloat(this.getAttribute("data-r"));
+        slider.value = r;
+        update(r);
+      });
+    }
+    update(parseFloat(slider.value));
+    /* redraw on resize is not needed — SVG scales via viewBox */
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+  else init();
+})();
+</script>
+
+</body>
+</html>
