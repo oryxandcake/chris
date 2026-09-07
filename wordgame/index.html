@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#1b2a4a">
+<meta name="description" content="A daily word game for young readers, with words from The Poisoned King, Swallows and Amazons, and Cakes in Space.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Word Quest">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<title>Word Quest</title>
+<style>
+  :root{
+    --ink:#12203c;
+    --sky:#1b2a4a;
+    --card:#ffffff;
+    --sea:#2f9ec4;
+    --sea-dark:#1d7fa3;
+    --sun:#ffc93c;
+    --coral:#ff6b6b;
+    --leaf:#5bc236;
+    --plum:#9b5de5;
+    --soft:#eef3fb;
+    --r:18px;
+    --pad: env(safe-area-inset-bottom, 0px);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    font-family:"Trebuchet MS", "Verdana", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(circle at 15% 8%, #3b5da8 0%, transparent 45%),
+      radial-gradient(circle at 85% 12%, #6a3fa0 0%, transparent 40%),
+      linear-gradient(180deg, #1b2a4a 0%, #24406e 55%, #2f6f96 100%);
+    background-attachment:fixed;
+    overflow-x:hidden;
+    touch-action:manipulation;
+    user-select:none;
+    -webkit-user-select:none;
+  }
+  /* twinkly stars in the background */
+  #stars{position:fixed; inset:0; pointer-events:none; z-index:0;}
+  #stars i{position:absolute; width:3px; height:3px; border-radius:50%; background:#fff; opacity:.6; animation:tw 3s infinite ease-in-out;}
+  @keyframes tw{0%,100%{opacity:.15; transform:scale(.7)} 50%{opacity:.85; transform:scale(1.2)}}
+
+  .app{position:relative; z-index:1; max-width:520px; margin:0 auto; min-height:100%; display:flex; flex-direction:column; padding:10px 12px calc(14px + var(--pad));}
+
+  /* ---------- top bar ---------- */
+  header{display:flex; align-items:center; gap:8px; margin-bottom:8px; min-height:44px;}
+  .btn-back{
+    border:none; background:rgba(255,255,255,.16); color:#fff; font-size:20px;
+    width:44px; height:44px; border-radius:14px; cursor:pointer; display:none; align-items:center; justify-content:center;
+  }
+  .btn-back.show{display:flex;}
+  .title{flex:1; color:#fff; font-size:19px; font-weight:bold; letter-spacing:.4px; text-align:center;}
+  .stars-count{
+    background:rgba(255,255,255,.16); color:#fff; border-radius:14px; padding:8px 12px;
+    font-size:16px; font-weight:bold; white-space:nowrap; min-width:44px; text-align:center;
+  }
+
+  /* ---------- screens ---------- */
+  .screen{display:none; flex:1; flex-direction:column;}
+  .screen.on{display:flex;}
+
+  /* ---------- home ---------- */
+  .hero{text-align:center; color:#fff; padding:6px 0 14px;}
+  .hero h1{font-size:clamp(30px,10vw,44px); margin:4px 0 2px; text-shadow:0 3px 0 rgba(0,0,0,.25); letter-spacing:1px;}
+  .hero p{margin:0; opacity:.85; font-size:14px;}
+  .menu{display:flex; flex-direction:column; gap:12px;}
+  .mode{
+    display:flex; align-items:center; gap:14px; text-align:left; width:100%;
+    border:none; border-radius:var(--r); padding:16px; cursor:pointer;
+    background:var(--card); box-shadow:0 5px 0 rgba(0,0,0,.22); color:var(--ink);
+    font-family:inherit; transition:transform .08s;
+  }
+  .mode:active{transform:translateY(3px); box-shadow:0 2px 0 rgba(0,0,0,.22);}
+  .mode .emoji{font-size:34px; line-height:1;}
+  .mode b{display:block; font-size:19px;}
+  .mode span{font-size:13px; opacity:.7;}
+  .mode .tick{margin-left:auto; font-size:22px;}
+  .booknote{margin-top:16px; color:#fff; opacity:.8; font-size:12.5px; text-align:center; line-height:1.6;}
+
+  /* ---------- shared game bits ---------- */
+  .clue{
+    background:rgba(255,255,255,.14); color:#fff; border-radius:var(--r);
+    padding:12px 14px; text-align:center; font-size:16px; line-height:1.4; margin-bottom:10px;
+  }
+  .clue .book{display:block; font-size:12px; opacity:.75; margin-top:4px;}
+  .say{color:#fff; text-align:center; min-height:26px; font-size:16px; font-weight:bold; margin:6px 0;}
+  .say.pop{animation:pop .3s;}
+  @keyframes pop{0%{transform:scale(.8)} 60%{transform:scale(1.12)} 100%{transform:scale(1)}}
+  .play{margin:auto 0;}
+  .actions{display:flex; gap:10px; margin-top:auto; padding-top:12px;}
+  .big{
+    flex:1; border:none; border-radius:16px; padding:15px 10px; font-size:17px; font-weight:bold;
+    font-family:inherit; cursor:pointer; color:#fff; background:var(--sea); box-shadow:0 4px 0 var(--sea-dark);
+  }
+  .big:active{transform:translateY(2px); box-shadow:0 2px 0 var(--sea-dark);}
+  .big.ghost{background:rgba(255,255,255,.18); box-shadow:0 4px 0 rgba(0,0,0,.2);}
+
+  /* ---------- groups ---------- */
+  .solved{display:flex; flex-direction:column; gap:8px; margin-bottom:8px;}
+  .solved-row{
+    border-radius:14px; padding:10px 12px; color:#fff; text-align:center; animation:pop .35s;
+    box-shadow:0 3px 0 rgba(0,0,0,.2);
+  }
+  .solved-row b{display:block; font-size:15px;}
+  .solved-row span{font-size:13px; opacity:.95;}
+  .g0{background:var(--plum)} .g1{background:var(--sea)} .g2{background:var(--coral)}
+  .grid{display:grid; grid-template-columns:repeat(3,1fr); gap:8px;}
+  .tile{
+    background:var(--card); border:none; border-radius:14px; min-height:74px; padding:6px 4px;
+    font-family:inherit; font-size:clamp(12px,3.6vw,16px); font-weight:bold; color:var(--ink);
+    cursor:pointer; box-shadow:0 4px 0 rgba(0,0,0,.2); word-break:break-word; line-height:1.15;
+  }
+  .tile.sel{background:var(--sun); transform:translateY(3px); box-shadow:0 1px 0 rgba(0,0,0,.2);}
+  .tile.gone{visibility:hidden;}
+  .shake{animation:shake .4s;}
+  @keyframes shake{0%,100%{transform:translateX(0)} 20%{transform:translateX(-7px)} 40%{transform:translateX(7px)} 60%{transform:translateX(-5px)} 80%{transform:translateX(5px)}}
+
+  /* ---------- guess ---------- */
+  .board{display:flex; flex-direction:column; gap:6px; align-items:center; margin-bottom:8px;}
+  .row{display:flex; gap:6px;}
+  .cell{
+    width:clamp(38px,12vw,52px); height:clamp(42px,13vw,56px); border-radius:10px;
+    background:rgba(255,255,255,.12); border:2px solid rgba(255,255,255,.25);
+    display:flex; align-items:center; justify-content:center;
+    font-size:clamp(20px,6vw,26px); font-weight:bold; color:#fff;
+  }
+  .cell.filled{border-color:rgba(255,255,255,.6);}
+  .cell.good{background:var(--leaf); border-color:var(--leaf); animation:flip .45s;}
+  .cell.close{background:var(--sun); border-color:var(--sun); color:#3a2c00; animation:flip .45s;}
+  .cell.no{background:rgba(255,255,255,.08); border-color:rgba(255,255,255,.14); opacity:.65; animation:flip .45s;}
+  @keyframes flip{0%{transform:rotateX(0)} 50%{transform:rotateX(90deg)} 100%{transform:rotateX(0)}}
+  .kb{display:flex; flex-direction:column; gap:5px; margin-top:auto;}
+  .kbrow{display:flex; gap:4px; justify-content:center;}
+  .key{
+    flex:1; min-width:0; height:46px; border:none; border-radius:8px; background:#e8eef8; color:var(--ink);
+    font-family:inherit; font-size:16px; font-weight:bold; cursor:pointer; padding:0;
+  }
+  .key.wide{flex:1.7; font-size:13px;}
+  .key.good{background:var(--leaf); color:#fff;}
+  .key.close{background:var(--sun);}
+  .key.no{background:#7c879b; color:#cdd4e0;}
+  .key:active{transform:translateY(2px);}
+
+  /* ---------- scramble ---------- */
+  .slots,.pool{display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:10px 0;}
+  .slot{
+    width:clamp(40px,12vw,54px); height:clamp(46px,13vw,58px); border-radius:12px;
+    border:3px dashed rgba(255,255,255,.4); display:flex; align-items:center; justify-content:center;
+    font-size:clamp(20px,6vw,26px); font-weight:bold; color:#fff; background:rgba(255,255,255,.08);
+  }
+  .slot.full{border-style:solid; background:var(--card); color:var(--ink); cursor:pointer;}
+  .slot.locked{background:var(--leaf); border-color:var(--leaf); color:#fff;}
+  .letter{
+    width:clamp(40px,12vw,54px); height:clamp(46px,13vw,58px); border-radius:12px; border:none;
+    background:var(--card); color:var(--ink); font-family:inherit; font-weight:bold;
+    font-size:clamp(20px,6vw,26px); cursor:pointer; box-shadow:0 4px 0 rgba(0,0,0,.2);
+  }
+  .letter:active{transform:translateY(2px); box-shadow:0 2px 0 rgba(0,0,0,.2);}
+  .letter.used{visibility:hidden;}
+
+  /* ---------- celebration ---------- */
+  #cheer{position:fixed; inset:0; pointer-events:none; z-index:50; overflow:hidden;}
+  #cheer span{position:absolute; font-size:28px; animation:fall linear forwards;}
+  @keyframes fall{from{transform:translateY(-40px) rotate(0)} to{transform:translateY(105vh) rotate(420deg)}}
+  .win{
+    position:fixed; inset:0; z-index:60; display:none; align-items:center; justify-content:center; padding:24px;
+    background:rgba(10,18,36,.72);
+  }
+  .win.on{display:flex;}
+  .win-card{
+    background:var(--card); border-radius:24px; padding:24px 20px; text-align:center; max-width:340px; width:100%;
+    animation:pop .4s;
+  }
+  .win-card .big-emoji{font-size:56px;}
+  .win-card h2{margin:6px 0 4px; font-size:24px;}
+  .win-card p{margin:0 0 16px; font-size:15px; opacity:.75;}
+  .win-card .actions{margin-top:0;}
+  .win-card .big.ghost{background:var(--soft); color:var(--ink); box-shadow:0 4px 0 #c9d4e6;}
+  .mute{
+    border:none; background:rgba(255,255,255,.16); color:#fff;
+    width:44px; height:44px; border-radius:14px; font-size:18px; cursor:pointer; flex:none;
+  }
+</style>
+</head>
+<body>
+<div id="stars"></div>
+<div id="cheer"></div>
+
+<div class="app">
+  <header>
+    <button class="btn-back" id="back" aria-label="Back">&#8592;</button>
+    <div class="title" id="title">Word Quest</div>
+    <button class="mute" id="mute" aria-label="Sound on or off">&#128266;</button>
+    <div class="stars-count" id="starcount">&#11088; 0</div>
+  </header>
+
+  <!-- HOME -->
+  <section class="screen on" id="s-home">
+    <div class="hero">
+      <h1>Word Quest</h1>
+      <p>Three little puzzles every day</p>
+    </div>
+    <div class="menu">
+      <button class="mode" data-go="groups">
+        <span class="emoji">&#129513;</span>
+        <span><b>Sort the Words</b><span>Find the three that belong together</span></span>
+        <span class="tick" id="tick-groups"></span>
+      </button>
+      <button class="mode" data-go="guess">
+        <span class="emoji">&#128269;</span>
+        <span><b>Guess the Word</b><span>Six tries. Green means right!</span></span>
+        <span class="tick" id="tick-guess"></span>
+      </button>
+      <button class="mode" data-go="scramble">
+        <span class="emoji">&#127917;</span>
+        <span><b>Mixed-Up Word</b><span>Put the letters back in order</span></span>
+        <span class="tick" id="tick-scramble"></span>
+      </button>
+    </div>
+    <p class="booknote">
+      Words from <b>The Poisoned King</b> &#128009;, <b>Swallows and Amazons</b> &#9973;
+      and <b>Cakes in Space</b> &#128640;<br>Works with no internet. Play anywhere!
+    </p>
+  </section>
+
+  <!-- GROUPS -->
+  <section class="screen" id="s-groups">
+    <div class="clue">Tap <b>3 words</b> that come from the same story.</div>
+    <div class="play">
+      <div class="solved" id="g-solved"></div>
+      <div class="grid" id="g-grid"></div>
+      <div class="say" id="g-say"></div>
+    </div>
+    <div class="actions">
+      <button class="big ghost" id="g-shuffle">&#128256; Mix up</button>
+      <button class="big" id="g-next">New puzzle</button>
+    </div>
+  </section>
+
+  <!-- GUESS -->
+  <section class="screen" id="s-guess">
+    <div class="clue" id="w-clue"></div>
+    <div class="board" id="w-board"></div>
+    <div class="say" id="w-say"></div>
+    <div class="kb" id="w-kb"></div>
+  </section>
+
+  <!-- SCRAMBLE -->
+  <section class="screen" id="s-scramble">
+    <div class="clue" id="x-clue"></div>
+    <div class="play">
+      <div class="slots" id="x-slots"></div>
+      <div class="pool" id="x-pool"></div>
+      <div class="say" id="x-say"></div>
+    </div>
+    <div class="actions">
+      <button class="big ghost" id="x-hint">&#128161; Hint</button>
+      <button class="big" id="x-next">New word</button>
+    </div>
+  </section>
+</div>
+
+<!-- WIN POPUP -->
+<div class="win" id="win">
+  <div class="win-card">
+    <div class="big-emoji" id="win-emoji">&#127881;</div>
+    <h2 id="win-title">You did it!</h2>
+    <p id="win-text"></p>
+    <div class="actions">
+      <button class="big ghost" id="win-home">Home</button>
+      <button class="big" id="win-again">Play again</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   WORD QUEST - a tiny offline word game for 7-year-old readers.
+   Words come from three books:
+     "The Poisoned King" (Impossible Creatures 2) - Katherine Rundell
+     "Swallows and Amazons" - Arthur Ransome
+     "Cakes in Space" - Philip Reeve & Sarah McIntyre
+   ============================================================ */
+
+/* ---------- the three books ---------- */
+var BOOKS = {
+  king:  { name:"The Poisoned King",   emoji:"🐉", cls:"g0" },
+  swall: { name:"Swallows & Amazons",  emoji:"⛵",       cls:"g1" },
+  cakes: { name:"Cakes in Space",      emoji:"🚀", cls:"g2" }
+};
+
+/* ---------- puzzle 1: sort the words ---------- */
+var GROUP_SETS = [
+  { king:["DRAGON","SPHINX","GRIFFIN"], swall:["TENT","PARROT","OARS"],          cakes:["CAKE","ROBOT","SPOON"] },
+  { king:["UNICORN","KRAKEN","CASTLE"], swall:["SAIL","LAKE","PIRATE"],          cakes:["ROCKET","ICING","ALIEN"] },
+  { king:["POISON","MAGIC","KING"],     swall:["FLAG","ANCHOR","CAMP"],          cakes:["MOON","CHERRY","JELLY"] },
+  { king:["FEATHER","CLAWS","WINGS"],   swall:["ROPE","MAST","HARBOUR"],         cakes:["CRUMBS","SPRINKLES","PUDDING"] },
+  { king:["MERMAID","CENTAUR","PHOENIX"],swall:["COMPASS","LANTERN","CHART"],    cakes:["PLANET","HELMET","ENGINE"] },
+  { king:["NEST","CHICK","SCALES"],     swall:["SWALLOW","AMAZON","ISLAND"],     cakes:["BISCUIT","SUGAR","TEETH"] },
+  { king:["SWORD","LAIR","SPELL"],      swall:["TREASURE","SIGNAL","DUFFER"],    cakes:["SNORE","BUN","FROSTING"] },
+  { king:["BEAK","TAIL","HORN"],        swall:["NANCY","PEGGY","ROGER"],         cakes:["CUSTARD","WAFER","CANDLE"] }
+];
+
+/* ---------- puzzle 2: guess the word ---------- */
+var GUESS_WORDS = [
+  { w:"DRAGON", b:"king",  c:"A huge scaly beast that breathes fire" },
+  { w:"SPHINX", b:"king",  c:"A creature with a lion's body and a face that asks riddles" },
+  { w:"CASTLE", b:"king",  c:"A stone home for a king, with towers and walls" },
+  { w:"POISON", b:"king",  c:"Something nasty that makes things sick" },
+  { w:"WINGS",  b:"king",  c:"You need two of these to fly" },
+  { w:"CLAWS",  b:"king",  c:"Sharp curved nails on a griffin's foot" },
+  { w:"MAGIC",  b:"king",  c:"What makes impossible things happen" },
+  { w:"SWORD",  b:"king",  c:"A long sharp blade a hero carries" },
+  { w:"NEST",   b:"king",  c:"Where a bird keeps her eggs" },
+  { w:"BOAT",   b:"swall", c:"The Swallow is a little wooden one" },
+  { w:"SAIL",   b:"swall", c:"The wind pushes this to make a boat go" },
+  { w:"TENT",   b:"swall", c:"You sleep in this when you camp" },
+  { w:"LAKE",   b:"swall", c:"A big pool of water you can row across" },
+  { w:"ISLAND", b:"swall", c:"Land with water all the way round it" },
+  { w:"PARROT", b:"swall", c:"Captain Flint's noisy green bird" },
+  { w:"PIRATE", b:"swall", c:"What Nancy and Peggy call themselves" },
+  { w:"ANCHOR", b:"swall", c:"Heavy metal hook that stops a boat drifting" },
+  { w:"CAMP",   b:"swall", c:"Where the explorers pitch their tents" },
+  { w:"CAKE",   b:"cakes", c:"Sweet, with icing on top" },
+  { w:"SPOON",  b:"cakes", c:"You eat your pudding with this" },
+  { w:"ROBOT",  b:"cakes", c:"A metal helper on a spaceship" },
+  { w:"ROCKET", b:"cakes", c:"It blasts off into space" },
+  { w:"PLANET", b:"cakes", c:"A big round world going round a sun" },
+  { w:"ALIEN",  b:"cakes", c:"A someone from another planet" },
+  { w:"ICING",  b:"cakes", c:"The sweet sticky stuff on a bun" },
+  { w:"MOON",   b:"cakes", c:"It glows in the night sky" },
+  { w:"STAR",   b:"cakes", c:"A twinkly light far out in space" },
+  { w:"SUGAR",  b:"cakes", c:"White and sweet, it goes in cakes" },
+  { w:"HELMET", b:"cakes", c:"You wear this on your head in space" }
+];
+
+/* ---------- puzzle 3: mixed-up word ---------- */
+var SCRAMBLE_WORDS = [
+  { w:"DRAGON",  b:"king",  c:"Fire comes out of its mouth" },
+  { w:"GRIFFIN", b:"king",  c:"Half eagle, half lion" },
+  { w:"UNICORN", b:"king",  c:"A horse with one horn" },
+  { w:"KRAKEN",  b:"king",  c:"A giant sea monster with long arms" },
+  { w:"MERMAID", b:"king",  c:"Half girl, half fish" },
+  { w:"FEATHER", b:"king",  c:"Soft and light, it falls off a bird" },
+  { w:"KING",    b:"king",  c:"He wears a crown" },
+  { w:"EGG",     b:"king",  c:"A baby bird hatches out of this" },
+  { w:"SWALLOW", b:"swall", c:"John and Susan's little sailing boat" },
+  { w:"AMAZON",  b:"swall", c:"Nancy and Peggy's boat" },
+  { w:"PARROT",  b:"swall", c:"A bird that copies what you say" },
+  { w:"TENT",    b:"swall", c:"You sleep in it on the island" },
+  { w:"SAIL",    b:"swall", c:"White cloth that catches the wind" },
+  { w:"ISLAND",  b:"swall", c:"Water all the way around it" },
+  { w:"COMPASS", b:"swall", c:"It always points north" },
+  { w:"OARS",    b:"swall", c:"Two of these help you row" },
+  { w:"CAKE",    b:"cakes", c:"Yum! With candles on your birthday" },
+  { w:"SPOON",   b:"cakes", c:"For eating jelly and custard" },
+  { w:"ROBOT",   b:"cakes", c:"Beep boop! A metal friend" },
+  { w:"ROCKET",  b:"cakes", c:"Three, two, one, blast off!" },
+  { w:"BISCUIT", b:"cakes", c:"Crunchy, and lovely dunked in milk" },
+  { w:"CHERRY",  b:"cakes", c:"A little red fruit on top of a cake" },
+  { w:"JELLY",   b:"cakes", c:"Wobbly wobbly pudding" },
+  { w:"MONSTER", b:"cakes", c:"Something scary with lots of teeth" },
+  { w:"PLANET",  b:"cakes", c:"Earth is one of these" },
+  { w:"MOON",    b:"cakes", c:"It shines at night" }
+];
+
+var PRAISE = ["Brilliant!","Well done!","Yes!","Ace!","Super!","Nice one!","Clever you!","Hooray!"];
+var TRY_AGAIN = ["Not quite - try again!","Ooh, so close!","Have another go!","Keep going!"];
+
+/* ============================================================
+   little helpers
+   ============================================================ */
+var $ = function(id){ return document.getElementById(id); };
+var pick = function(a){ return a[Math.floor(Math.random()*a.length)]; };
+
+function shuffle(a){
+  a = a.slice();
+  for(var i=a.length-1;i>0;i--){
+    var j = Math.floor(Math.random()*(i+1));
+    var t = a[i]; a[i] = a[j]; a[j] = t;
+  }
+  return a;
+}
+
+/* today's number, so everyone gets the same puzzles on the same day */
+function dayNumber(){
+  var d = new Date();
+  return Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())/86400000);
+}
+function todayKey(){
+  var d = new Date();
+  return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();
+}
+
+/* saved progress - wrapped up so a locked-down browser can't break the game */
+var save = {
+  read: function(){
+    try{ return JSON.parse(localStorage.getItem("wordquest")||"{}"); }
+    catch(e){ return {}; }
+  },
+  write: function(o){
+    try{ localStorage.setItem("wordquest", JSON.stringify(o)); }catch(e){}
+  }
+};
+var state = save.read();
+if(state.day !== todayKey()){ state.day = todayKey(); state.done = {}; }
+if(typeof state.stars !== "number"){ state.stars = 0; }
+if(!state.done){ state.done = {}; }
+if(typeof state.sound !== "boolean"){ state.sound = true; }
+
+function addStars(n){
+  state.stars += n;
+  save.write(state);
+  paintStars();
+}
+function paintStars(){
+  $("starcount").innerHTML = "⭐ " + state.stars;
+  ["groups","guess","scramble"].forEach(function(m){
+    $("tick-"+m).innerHTML = state.done[m] ? "✅" : "";
+  });
+}
+function markDone(mode){
+  if(!state.done[mode]){ state.done[mode] = true; save.write(state); paintStars(); }
+}
+
+/* ---------- sounds, made with the browser (no files needed) ---------- */
+var actx = null;
+function beep(freq, len, type){
+  if(!state.sound) return;
+  try{
+    if(!actx){ actx = new (window.AudioContext||window.webkitAudioContext)(); }
+    if(actx.state === "suspended"){ actx.resume(); }
+    var o = actx.createOscillator(), g = actx.createGain();
+    o.type = type || "sine";
+    o.frequency.value = freq;
+    g.gain.setValueAtTime(0.001, actx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.18, actx.currentTime + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + len);
+    o.connect(g); g.connect(actx.destination);
+    o.start(); o.stop(actx.currentTime + len + 0.02);
+  }catch(e){}
+}
+function sndTap(){ beep(520, 0.06, "triangle"); }
+function sndGood(){ beep(660, 0.12); setTimeout(function(){ beep(880, 0.16); }, 110); }
+function sndBad(){ beep(180, 0.18, "sawtooth"); }
+function sndWin(){
+  [523,659,784,1046].forEach(function(f,i){ setTimeout(function(){ beep(f, 0.18); }, i*130); });
+}
+function buzz(ms){ if(navigator.vibrate){ try{ navigator.vibrate(ms); }catch(e){} } }
+
+/* ---------- confetti ---------- */
+function cheer(){
+  var box = $("cheer");
+  var bits = ["⭐","🍰","⛵","🐉","🚀","🎉","🥚","🍬"];
+  for(var i=0;i<24;i++){
+    var s = document.createElement("span");
+    s.textContent = pick(bits);
+    s.style.left = Math.random()*96 + "%";
+    s.style.animationDuration = (1.6 + Math.random()*1.4) + "s";
+    s.style.animationDelay = (Math.random()*0.5) + "s";
+    box.appendChild(s);
+    (function(el){ setTimeout(function(){ el.remove(); }, 3600); })(s);
+  }
+}
+
+/* ---------- screens ---------- */
+var TITLES = { home:"", groups:"Sort the Words", guess:"Guess the Word", scramble:"Mixed-Up Word" };
+var current = "home";
+function show(name){
+  current = name;
+  ["home","groups","guess","scramble"].forEach(function(n){
+    $("s-"+n).classList.toggle("on", n === name);
+  });
+  $("title").textContent = TITLES[name];
+  $("back").classList.toggle("show", name !== "home");
+  $("win").classList.remove("on");
+  window.scrollTo(0,0);
+}
+$("back").onclick = function(){ sndTap(); show("home"); };
+
+document.querySelectorAll(".mode").forEach(function(b){
+  b.onclick = function(){
+    sndTap();
+    var m = b.getAttribute("data-go");
+    if(m === "groups"){ newGroups(0); }
+    if(m === "guess"){ newGuess(0); }
+    if(m === "scramble"){ newScramble(0); }
+    show(m);
+  };
+});
+
+/* ---------- win popup ---------- */
+var againFn = function(){};
+function celebrate(title, text, emoji, again){
+  againFn = again;
+  $("win-emoji").innerHTML = emoji;
+  $("win-title").textContent = title;
+  $("win-text").textContent = text;
+  $("win").classList.add("on");
+  cheer(); sndWin(); buzz([40,60,40]);
+}
+$("win-home").onclick = function(){ sndTap(); show("home"); };
+$("win-again").onclick = function(){ sndTap(); $("win").classList.remove("on"); againFn(); };
+
+/* ============================================================
+   GAME 1 - Sort the Words
+   ============================================================ */
+var G = { set:null, tiles:[], sel:[], found:0, offset:0 };
+
+function newGroups(step){
+  G.offset = (typeof step === "number" && step > 0) ? G.offset + step : 0;
+  var idx = (dayNumber() + G.offset) % GROUP_SETS.length;
+  G.set = GROUP_SETS[idx];
+  G.sel = [];
+  G.found = 0;
+  G.tiles = [];
+  ["king","swall","cakes"].forEach(function(k){
+    G.set[k].forEach(function(w){ G.tiles.push({ word:w, book:k }); });
+  });
+  G.tiles = shuffle(G.tiles);
+  $("g-solved").innerHTML = "";
+  $("g-say").textContent = "";
+  drawGroups();
+}
+
+function drawGroups(){
+  var grid = $("g-grid");
+  grid.innerHTML = "";
+  G.tiles.forEach(function(t, i){
+    var b = document.createElement("button");
+    b.className = "tile" + (G.sel.indexOf(i) > -1 ? " sel" : "") + (t.done ? " gone" : "");
+    b.textContent = t.word;
+    b.onclick = function(){ tapTile(i); };
+    grid.appendChild(b);
+  });
+}
+
+function tapTile(i){
+  if(G.tiles[i].done) return;
+  var at = G.sel.indexOf(i);
+  if(at > -1){ G.sel.splice(at, 1); }
+  else if(G.sel.length < 3){ G.sel.push(i); }
+  sndTap();
+  drawGroups();
+  if(G.sel.length === 3){ setTimeout(checkGroup, 220); }
+}
+
+function checkGroup(){
+  var books = G.sel.map(function(i){ return G.tiles[i].book; });
+  var same = books[0] === books[1] && books[1] === books[2];
+
+  if(same){
+    var book = BOOKS[books[0]];
+    var words = G.sel.map(function(i){ G.tiles[i].done = true; return G.tiles[i].word; });
+    var row = document.createElement("div");
+    row.className = "solved-row " + book.cls;
+    row.innerHTML = "<b>" + book.emoji + " " + book.name + "</b><span>" + words.join("  ·  ") + "</span>";
+    $("g-solved").appendChild(row);
+    G.sel = [];
+    G.found++;
+    sndGood(); buzz(30);
+    $("g-say").textContent = pick(PRAISE);
+    $("g-say").className = "say pop";
+    drawGroups();
+
+    if(G.found === 3){
+      addStars(3);
+      markDone("groups");
+      setTimeout(function(){
+        celebrate("All sorted!", "You found all three stories. +3 stars", "🧩",
+                  function(){ newGroups(1); });
+      }, 500);
+    }
+  } else {
+    /* how many share a book? two matching is worth a friendly nudge */
+    var counts = {};
+    books.forEach(function(b){ counts[b] = (counts[b]||0) + 1; });
+    var best = Math.max(counts.king||0, counts.swall||0, counts.cakes||0);
+    $("g-say").textContent = best === 2 ? "So close - two of those match!" : pick(TRY_AGAIN);
+    $("g-say").className = "say pop";
+    sndBad(); buzz(80);
+    $("g-grid").classList.add("shake");
+    setTimeout(function(){ $("g-grid").classList.remove("shake"); }, 420);
+    G.sel = [];
+    setTimeout(drawGroups, 300);
+  }
+}
+
+$("g-shuffle").onclick = function(){
+  sndTap();
+  var left = G.tiles.filter(function(t){ return !t.done; });
+  var mixed = shuffle(left);
+  var k = 0;
+  G.tiles = G.tiles.map(function(t){ return t.done ? t : mixed[k++]; });
+  G.sel = [];
+  drawGroups();
+};
+$("g-next").onclick = function(){ sndTap(); newGroups(1); };
+
+/* ============================================================
+   GAME 2 - Guess the Word
+   ============================================================ */
+var W = { word:"", clue:"", book:"", row:0, guess:"", over:false, offset:0, keys:{} };
+var KB_ROWS = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
+
+function newGuess(step){
+  W.offset = (typeof step === "number" && step > 0) ? W.offset + step : 0;
+  var idx = (dayNumber()*3 + W.offset) % GUESS_WORDS.length;
+  var item = GUESS_WORDS[idx];
+  W.word = item.w;
+  W.clue = item.c;
+  W.book = item.b;
+  W.row = 0; W.guess = ""; W.over = false; W.keys = {};
+  var bk = BOOKS[item.b];
+  $("w-clue").innerHTML = item.c + "<span class='book'>" + bk.emoji + " " + bk.name +
+                          " · " + W.word.length + " letters</span>";
+  $("w-say").textContent = "";
+  drawBoard();
+  drawKeys();
+}
+
+function drawBoard(){
+  var board = $("w-board");
+  board.innerHTML = "";
+  for(var r=0; r<6; r++){
+    var row = document.createElement("div");
+    row.className = "row";
+    for(var c=0; c<W.word.length; c++){
+      var cell = document.createElement("div");
+      cell.className = "cell";
+      cell.id = "c" + r + "_" + c;
+      row.appendChild(cell);
+    }
+    board.appendChild(row);
+  }
+  /* re-draw the guesses already made */
+  for(var i=0; i<W.row; i++){
+    if(W.past && W.past[i]){ paintRow(i, W.past[i], false); }
+  }
+  paintCurrent();
+}
+
+function paintCurrent(){
+  for(var c=0; c<W.word.length; c++){
+    var cell = $("c" + W.row + "_" + c);
+    if(!cell) continue;
+    cell.textContent = W.guess[c] || "";
+    cell.className = "cell" + (W.guess[c] ? " filled" : "");
+  }
+}
+
+/* work out green / yellow / grey, handling repeated letters properly */
+function score(guess, word){
+  var res = new Array(guess.length);
+  var left = {};
+  var i;
+  for(i=0; i<word.length; i++){
+    if(guess[i] === word[i]){ res[i] = "good"; }
+    else { left[word[i]] = (left[word[i]]||0) + 1; }
+  }
+  for(i=0; i<guess.length; i++){
+    if(res[i]) continue;
+    if(left[guess[i]] > 0){ res[i] = "close"; left[guess[i]]--; }
+    else { res[i] = "no"; }
+  }
+  return res;
+}
+
+function paintRow(r, guess, animate){
+  var marks = score(guess, W.word);
+  for(var c=0; c<guess.length; c++){
+    (function(c){
+      var go = function(){
+        var cell = $("c" + r + "_" + c);
+        if(!cell) return;
+        cell.textContent = guess[c];
+        cell.className = "cell " + marks[c];
+      };
+      animate ? setTimeout(go, c*140) : go();
+    })(c);
+  }
+  /* keyboard colours - green always wins */
+  for(var c2=0; c2<guess.length; c2++){
+    var L = guess[c2], m = marks[c2];
+    if(W.keys[L] === "good") continue;
+    if(W.keys[L] === "close" && m === "no") continue;
+    W.keys[L] = m;
+  }
+  setTimeout(drawKeys, animate ? guess.length*140 : 0);
+}
+
+function drawKeys(){
+  var kb = $("w-kb");
+  kb.innerHTML = "";
+  KB_ROWS.forEach(function(rowStr, ri){
+    var row = document.createElement("div");
+    row.className = "kbrow";
+    if(ri === 2){
+      var del = document.createElement("button");
+      del.className = "key wide";
+      del.innerHTML = "⌫";
+      del.onclick = function(){ typeLetter("DEL"); };
+      row.appendChild(del);
+    }
+    rowStr.split("").forEach(function(L){
+      var k = document.createElement("button");
+      k.className = "key" + (W.keys[L] ? " " + W.keys[L] : "");
+      k.textContent = L;
+      k.onclick = function(){ typeLetter(L); };
+      row.appendChild(k);
+    });
+    if(ri === 2){
+      var go = document.createElement("button");
+      go.className = "key wide";
+      go.textContent = "GO";
+      go.onclick = function(){ typeLetter("GO"); };
+      row.appendChild(go);
+    }
+    kb.appendChild(row);
+  });
+}
+
+function typeLetter(L){
+  if(W.over) return;
+  if(L === "DEL"){
+    W.guess = W.guess.slice(0, -1);
+    sndTap(); paintCurrent(); return;
+  }
+  if(L === "GO"){
+    if(W.guess.length < W.word.length){
+      $("w-say").textContent = "Fill in all the letters first";
+      $("w-say").className = "say pop";
+      sndBad();
+      return;
+    }
+    submitGuess();
+    return;
+  }
+  if(W.guess.length < W.word.length){
+    W.guess += L;
+    sndTap();
+    paintCurrent();
+  }
+}
+
+function submitGuess(){
+  W.past = W.past || [];
+  W.past[W.row] = W.guess;
+  paintRow(W.row, W.guess, true);
+  var won = (W.guess === W.word);
+  var guessed = W.guess;
+  W.row++;
+  var delay = W.word.length*140 + 200;
+
+  if(won){
+    W.over = true;
+    var stars = Math.max(1, 4 - W.row);   /* quicker guess, more stars */
+    setTimeout(function(){
+      addStars(stars);
+      markDone("guess");
+      celebrate("You got it!", guessed + " in " + W.row + (W.row === 1 ? " try" : " tries") +
+                ". +" + stars + " stars", "🔍", function(){ newGuess(1); });
+    }, delay);
+    return;
+  }
+
+  W.guess = "";
+  setTimeout(function(){
+    paintCurrent();
+    if(W.row >= 6){
+      W.over = true;
+      $("w-say").textContent = "The word was " + W.word;
+      $("w-say").className = "say pop";
+      sndBad();
+      setTimeout(function(){
+        celebrate("Good try!", "The word was " + W.word + ". Shall we try another?",
+                  "🤗", function(){ newGuess(1); });
+      }, 900);
+    } else {
+      /* a gentle helping hand after three goes */
+      if(W.row === 3){
+        $("w-say").textContent = "Hint: it starts with " + W.word[0];
+      } else {
+        $("w-say").textContent = pick(TRY_AGAIN);
+      }
+      $("w-say").className = "say pop";
+      sndBad();
+    }
+  }, delay);
+}
+
+/* a real keyboard works too, for anyone playing on a laptop */
+document.addEventListener("keydown", function(e){
+  if(current !== "guess") return;
+  if(e.key === "Enter"){ typeLetter("GO"); }
+  else if(e.key === "Backspace"){ typeLetter("DEL"); }
+  else if(/^[a-zA-Z]$/.test(e.key)){ typeLetter(e.key.toUpperCase()); }
+});
+
+/* ============================================================
+   GAME 3 - Mixed-Up Word
+   ============================================================ */
+var X = { word:"", letters:[], slots:[], offset:0, hints:0 };
+
+function newScramble(step){
+  X.offset = (typeof step === "number" && step > 0) ? X.offset + step : 0;
+  var idx = (dayNumber()*5 + X.offset) % SCRAMBLE_WORDS.length;
+  var item = SCRAMBLE_WORDS[idx];
+  X.word = item.w;
+  X.hints = 0;
+  X.slots = X.word.split("").map(function(){ return null; });
+
+  /* mix the letters, making sure they don't come out in order */
+  var tries = 0, mixed;
+  do{
+    mixed = shuffle(X.word.split(""));
+    tries++;
+  } while(mixed.join("") === X.word && tries < 20);
+  X.letters = mixed.map(function(ch){ return { ch:ch, used:false }; });
+
+  var bk = BOOKS[item.b];
+  $("x-clue").innerHTML = item.c + "<span class='book'>" + bk.emoji + " " + bk.name + "</span>";
+  $("x-say").textContent = "";
+  drawScramble();
+}
+
+function drawScramble(){
+  var slots = $("x-slots");
+  slots.innerHTML = "";
+  X.slots.forEach(function(s, i){
+    var d = document.createElement("div");
+    d.className = "slot" + (s ? " full" : "") + (s && s.locked ? " locked" : "");
+    d.textContent = s ? s.ch : "";
+    if(s && !s.locked){ d.onclick = function(){ takeBack(i); }; }
+    slots.appendChild(d);
+  });
+
+  var pool = $("x-pool");
+  pool.innerHTML = "";
+  X.letters.forEach(function(l, i){
+    var b = document.createElement("button");
+    b.className = "letter" + (l.used ? " used" : "");
+    b.textContent = l.ch;
+    b.onclick = function(){ placeLetter(i); };
+    pool.appendChild(b);
+  });
+}
+
+function placeLetter(i){
+  var l = X.letters[i];
+  if(l.used) return;
+  var slot = -1;
+  for(var s=0; s<X.slots.length; s++){
+    if(!X.slots[s]){ slot = s; break; }
+  }
+  if(slot < 0) return;
+  X.slots[slot] = { ch:l.ch, from:i };
+  l.used = true;
+  sndTap();
+  drawScramble();
+  if(X.slots.every(function(s){ return s; })){ setTimeout(checkScramble, 250); }
+}
+
+function takeBack(i){
+  var s = X.slots[i];
+  if(!s || s.locked) return;
+  X.letters[s.from].used = false;
+  X.slots[i] = null;
+  sndTap();
+  drawScramble();
+}
+
+function checkScramble(){
+  var made = X.slots.map(function(s){ return s.ch; }).join("");
+  if(made === X.word){
+    var stars = X.hints > 0 ? 1 : 2;
+    addStars(stars);
+    markDone("scramble");
+    X.slots.forEach(function(s){ s.locked = true; });
+    drawScramble();
+    setTimeout(function(){
+      celebrate("Unscrambled!", X.word + "  +" + stars + (stars === 1 ? " star" : " stars"),
+                "🎭", function(){ newScramble(1); });
+    }, 400);
+  } else {
+    $("x-say").textContent = pick(TRY_AGAIN);
+    $("x-say").className = "say pop";
+    sndBad(); buzz(80);
+    $("x-slots").classList.add("shake");
+    setTimeout(function(){ $("x-slots").classList.remove("shake"); }, 420);
+    /* send the wrong letters back so it is easy to start again */
+    setTimeout(function(){
+      X.slots.forEach(function(s, i){
+        if(s){ X.letters[s.from].used = false; X.slots[i] = null; }
+      });
+      drawScramble();
+    }, 500);
+  }
+}
+
+/* hint: drop the next correct letter into place and lock it */
+$("x-hint").onclick = function(){
+  var target = -1;
+  for(var i=0; i<X.slots.length; i++){
+    if(!X.slots[i] || X.slots[i].ch !== X.word[i]){ target = i; break; }
+  }
+  if(target < 0) return;
+  /* clear whatever is sitting there */
+  if(X.slots[target]){ X.letters[X.slots[target].from].used = false; }
+  var want = X.word[target];
+  for(var j=0; j<X.letters.length; j++){
+    if(!X.letters[j].used && X.letters[j].ch === want){
+      X.letters[j].used = true;
+      X.slots[target] = { ch:want, from:j, locked:true };
+      break;
+    }
+  }
+  X.hints++;
+  sndGood();
+  $("x-say").textContent = "There you go!";
+  $("x-say").className = "say pop";
+  drawScramble();
+  if(X.slots.every(function(s){ return s; })){ setTimeout(checkScramble, 300); }
+};
+$("x-next").onclick = function(){ sndTap(); newScramble(1); };
+
+/* ============================================================
+   sound on / off
+   ============================================================ */
+function paintMute(){
+  $("mute").innerHTML = state.sound ? "🔊" : "🔇";
+}
+$("mute").onclick = function(){
+  state.sound = !state.sound;
+  save.write(state);
+  paintMute();
+  if(state.sound){ sndTap(); }
+};
+
+/* ============================================================
+   start up
+   ============================================================ */
+(function makeStars(){
+  var box = $("stars"), html = "";
+  for(var i=0; i<40; i++){
+    html += "<i style='left:" + (Math.random()*100).toFixed(1) + "%;top:" +
+            (Math.random()*100).toFixed(1) + "%;animation-delay:" +
+            (Math.random()*3).toFixed(1) + "s'></i>";
+  }
+  box.innerHTML = html;
+})();
+
+paintStars();
+paintMute();
+show("home");
+
+/* remember the game so it works with no internet */
+if("serviceWorker" in navigator){
+  window.addEventListener("load", function(){
+    navigator.serviceWorker.register("sw.js").catch(function(){});
+  });
+}
+</script>
+</body>
+</html>
