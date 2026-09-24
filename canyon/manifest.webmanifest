@@ -1,0 +1,15 @@
+{
+  "name": "Vector Canyon",
+  "short_name": "Vector Canyon",
+  "description": "High-speed wireframe flight through a neon canyon.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#07020f",
+  "theme_color": "#07020f",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
